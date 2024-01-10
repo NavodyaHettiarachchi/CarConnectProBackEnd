@@ -54,7 +54,7 @@ userSchema.methods.generateJWT = function () {
 userSchema.methods.authJSON = function () { 
 	return {
 		username: this.username,
-		token: this.generateJWT,
+		token: this.generateJWT(),
 		name: this.name,
 		age: this.age,
 		vehicles: this.vehicles
