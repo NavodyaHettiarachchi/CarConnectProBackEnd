@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
-const uniqueValidator = require('mongoose-unique-validator');
+// const uniqueValidator = require('mongoose-unique-validator');
 const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
-const secret = require('../.env').secret;
+// const jwt = require('jsonwebtoken');
+// const secret = require('../.env').secret;
 const Schema = mongoose.Schema;
 
 const repairCenterSchema = new Schema({
@@ -92,7 +92,7 @@ const repairCenterSchema = new Schema({
   timeseries: true,
 });
 
-repairCenterSchema.plugin(uniqueValidator, {message: 'is Already Taken'});
+// repairCenterSchema.plugin(uniqueValidator, { message: 'is Already Taken' });
 
 repairCenterSchema.methods.setPassword = function (password){ 
   this.salt = crypto.randomBytes(16).toString('hex');
@@ -104,29 +104,29 @@ repairCenterSchema.methods.validatePassword = function (password) {
   return this.pwdHash === pwd;
 }
 
-repairCenterSchema.methods.generateJWT = function () {
-  let today = new Date();
-  let exp = new Date(today);
-  exp.setDate(today.getDate() + 30);
+// repairCenterSchema.methods.generateJWT = function () {
+//   let today = new Date();
+//   let exp = new Date(today);
+//   exp.setDate(today.getDate() + 30);
 
-  const payload = {
-    id: this._id,
-    name: this.name,
-    exp: parseInt(exp.getTime() / 1000),
-  };
+//   const payload = {
+//     id: this._id,
+//     name: this.name,
+//     exp: parseInt(exp.getTime() / 1000),
+//   };
   
-  return jwt.sign(payload, secret);
-};
+//   return jwt.sign(payload, secret);
+// };
 
 
-repairCenterSchema.methods.authJSON = function () {
-  const repCenter = this.toObject();
-  delete repCenter._id;
-  delete repCenter.pwdHash
-  repCenter.token = this.generateJWT();
+// repairCenterSchema.methods.authJSON = function () {
+//   const repCenter = this.toObject();
+//   delete repCenter._id;
+//   delete repCenter.pwdHash
+//   repCenter.token = this.generateJWT();
 
-  return repCenter;
-};
+//   return repCenter;
+// };
 
 //Pre-save middleware to generate service ID for services
 repairCenterSchema.pre('save', function (next) {
