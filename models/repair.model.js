@@ -59,33 +59,33 @@ const repairCenterSchema = new Schema({
   services: [{
     service_id: {
       type: String,
-      required: true,
+      required: false,
     },
     service_name: {
       type: String,
-      required: true,
+      required: false,
     },
     service_description: {
       type: String,
-      required: true,
+      required: false,
     },
     price: {
       type: Number,
-      required: true,
+      required: false,
     }
   }],
   employees: [{
     employee_id: {
       type: String,
-      required: true,
+      required: false,
     },
     name: {
       type: String,
-      required: true,
+      required: false,
     },
     position: {
       type: String,
-      required: true,
+      required: false,
     }
   }]
 }, {
@@ -101,7 +101,27 @@ repairCenterSchema.methods.setPassword = function (password){
 
 repairCenterSchema.methods.validatePassword = function (password) { 
   let pwd = crypto.pbkdf2Sync(password, this.salt, 10000, 512, 'sha512');
-  return this.pwdHash === pwd;
+  return this.pwdHash == pwd;
+}
+
+repairCenterSchema.methods.authJSON = function () { 
+  return ({
+    location: {
+      address: this.location.address,
+      city: this.location.city,
+      province: this.location.province,
+    },
+    contactInfo: {
+      phone: this.contactInfo.phone,
+      email: this.contactInfo.email,
+    },
+    name: this.name,
+    email: this.email,
+    username: this.username,
+    id: this._id,
+    services: this.services,
+    employees: this.employees,
+  });
 }
 
 // repairCenterSchema.methods.generateJWT = function () {
@@ -145,6 +165,8 @@ repairCenterSchema.pre('save', function (next) {
   })
   next();
 });
+
+
 
 const RepairCenter = mongoose.model('RepairCenter', repairCenterSchema);
 
