@@ -59,49 +59,69 @@ const repairCenterSchema = new Schema({
   services: [{
     service_id: {
       type: String,
-      required: true,
+      required: false,
     },
     service_name: {
       type: String,
-      required: true,
+      required: false,
     },
     service_description: {
       type: String,
-      required: true,
+      required: false,
     },
     price: {
       type: Number,
-      required: true,
+      required: false,
     }
   }],
   employees: [{
     employee_id: {
       type: String,
-      required: true,
+      required: false,
     },
     name: {
       type: String,
-      required: true,
+      required: false,
     },
     position: {
       type: String,
-      required: true,
+      required: false,
     }
   }]
 }, {
-  timeseries: true,
+  timestamps: true,
 });
 
 // repairCenterSchema.plugin(uniqueValidator, { message: 'is Already Taken' });
 
-repairCenterSchema.methods.setPassword = function (password){ 
+repairCenterSchema.methods.setPassword = function (password) {
   this.salt = crypto.randomBytes(16).toString('hex');
   this.pwdHash = crypto.pbkdf2Sync(password, this.salt, 10000, 512, 'sha512');
 }
 
-repairCenterSchema.methods.validatePassword = function (password) { 
+repairCenterSchema.methods.validatePassword = function (password) {
   let pwd = crypto.pbkdf2Sync(password, this.salt, 10000, 512, 'sha512');
-  return this.pwdHash === pwd;
+  return this.pwdHash == pwd;
+}
+
+repairCenterSchema.methods.authJSON = function () {
+  return ({
+    location: {
+      address: this.location.address,
+      city: this.location.city,
+      province: this.location.province,
+    },
+    contactInfo: {
+      phone: this.contactInfo.phone,
+      email: this.contactInfo.email,
+    },
+    name: this.name,
+    email: this.email,
+    username: this.username,
+    id: this._id,
+    services: this.services,
+    employees: this.employees,
+  });
 }
 
 // repairCenterSchema.methods.generateJWT = function () {
@@ -114,7 +134,7 @@ repairCenterSchema.methods.validatePassword = function (password) {
 //     name: this.name,
 //     exp: parseInt(exp.getTime() / 1000),
 //   };
-  
+
 //   return jwt.sign(payload, secret);
 // };
 
@@ -131,20 +151,22 @@ repairCenterSchema.methods.validatePassword = function (password) {
 //Pre-save middleware to generate service ID for services
 repairCenterSchema.pre('save', function (next) {
   // looping through each service in array
-  this.services.forEach(service => { 
+  this.services.forEach(service => {
     if (!service.service_id) {
       // Generate unique Service ID
       service.service_id = Math.random().toString(36).substring(7);
     }
   })
-  this.employees.forEach(emp => { 
-    if (!emp.employee_id) { 
+  this.employees.forEach(emp => {
+    if (!emp.employee_id) {
       // Generate unique emp ID
       emp.employee_id = Math.random().toString(36).substring(7);
     }
   })
   next();
 });
+
+
 
 const RepairCenter = mongoose.model('RepairCenter', repairCenterSchema);
 
