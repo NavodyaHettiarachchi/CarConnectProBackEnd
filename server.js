@@ -26,6 +26,9 @@ app.use('/users', userRoutes);
 // Repair Routes
 const repairRoutes = require('./routes/repairRoutes');
 app.use('/repair', repairRoutes);
+// Service Routes
+const serviceRoutes = require('./routes/serviceRoutes');
+app.use('/service', serviceRoutes);
 
 app.listen(port, () => {
 	console.log(`Server is running on port: ${port}`)
