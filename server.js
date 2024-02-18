@@ -30,6 +30,22 @@ app.use('/repair', repairRoutes);
 const serviceRoutes = require('./routes/serviceRoutes');
 app.use('/service', serviceRoutes);
 
+// register route
+const registerRoute = require('./routes/pgRegisterRoutes');
+app.use('/register', registerRoute);
+
+// login route
+const loginRoute = require('./routes/pgLoginRoutes');
+app.use('/login', loginRoute);
+
+// test
+const testRoutes = require('./routes/pgOwnerRoutes');
+app.use('/testUser', testRoutes);
+
+const testServiceRouters = require('./routes/pgServiceRoutes');
+app.use('/testService', testServiceRouters);
+
+
 app.listen(port, () => {
 	console.log(`Server is running on port: ${port}`)
 });
