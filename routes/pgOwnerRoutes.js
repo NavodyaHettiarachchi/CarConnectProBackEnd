@@ -15,12 +15,12 @@ router.get('/', async (req, res) => {
     `);
     res.status(200).json(result.rows);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 })
 
-// get profile id of vehicle owner
+// get profile of vehicle owner
 
 router.get('/profile/:id', async (req, res) => {
   try {
@@ -32,10 +32,12 @@ router.get('/profile/:id', async (req, res) => {
     `, [userId]);
     res.status(200).json(result.rows[0]);
   } catch (err) { 
-    console.log(err);
+    console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+// update profile information of owner
 
 router.patch('/profile/:id', [
   check('name').optional().trim().notEmpty().withMessage('Name is required'),
@@ -78,7 +80,7 @@ router.patch('/profile/:id', [
     await updateUser.save();
     res.status(200).json(result.rows[0]);
   } catch (err) { 
-    console.log(err);
+    console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 
