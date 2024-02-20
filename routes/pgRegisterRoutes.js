@@ -50,6 +50,7 @@ router.post('/',
           street_1,
           street_2,
           city,
+          dob,
           province,
           phone,
           email,
@@ -260,6 +261,7 @@ async function createSchemaAndTables(schemaName) {
       contact TEXT NOT NULL,
       nic TEXT NOT NULL,
       gender CHAR,
+      dob DATE NOT NULL,
       manager_id INTEGER REFERENCES ${schemaName}.employee(id),
       designation TEXT NOT NULL,
       salary NUMERIC(10,2) NOT NULL,
@@ -284,7 +286,15 @@ async function createSchemaAndTables(schemaName) {
       description TEXT NOT NULL,
       mileage NUMERIC(8,1) NOT NULL,
       cost NUMERIC(12,2) NOT NULL,
-      details JSON
+      details JSON,
+      isOngoing BOOLEAN NOT NULL DEFAULT TRUE
+    )`);
+
+    // service technician table
+    await client.query(`CREATE TABLE ${schemaName}.service_technicians(
+      id SERIAL PRIMARY KEY,
+      service_id INTEGER NOT NULL REFERENCES ${schemaName}.service_records(id),
+      technician_id INTEGER NOT NULL REFERENCES ${schemaName}.employee(id)
     )`);
 
 

@@ -20,15 +20,6 @@ connection.once('open', () => {
 })
 
 // Route handling
-// User Routes
-const userRoutes = require('./routes/userRoutes');
-app.use('/users', userRoutes);
-// Repair Routes
-const repairRoutes = require('./routes/repairRoutes');
-app.use('/repair', repairRoutes);
-// Service Routes
-const serviceRoutes = require('./routes/serviceRoutes');
-app.use('/service', serviceRoutes);
 
 // register route
 const registerRoute = require('./routes/pgRegisterRoutes');
@@ -37,6 +28,9 @@ app.use('/register', registerRoute);
 // login route
 const loginRoute = require('./routes/pgLoginRoutes');
 app.use('/login', loginRoute);
+
+
+
 
 // test
 const testRoutes = require('./routes/pgOwnerRoutes');
