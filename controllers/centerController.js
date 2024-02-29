@@ -2,6 +2,7 @@ const pool = require('../db/db');
 const catchAsync = require('../utils/catchAsync');
 const { error } = require('console');
 const logController = require('../controllers/logController');
+const crypto = require('crypto');
 const AppError = require('../utils/appError');
 
 
@@ -96,7 +97,7 @@ exports.getProfile = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 exports.updateProfile = catchAsync(async (req, res, next) => {
-  const sql = `
+  let sql = `
       UPDATE "carConnectPro"."center"
       SET 
     `;
@@ -109,7 +110,7 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
       dataArr.push(req.body[key])
     }
   }
-  sql = sql.substring(0, sql.slice(0, -2));
+  sql = sql.substring(0, sql.length - 2);
   sql = sql.concat(" WHERE id = $", count.toString(), " RETURNING *");
   dataArr.push(req.body.id);
 

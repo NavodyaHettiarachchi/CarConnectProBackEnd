@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
 
 // get profile of center
 
-router.get('/profile/:id', centerController.getProfile);
+router.post('/profile/:id', centerController.getProfile);
 
 // update profile information of center
 
@@ -49,11 +49,11 @@ router.patch('profile/:id', [
 
 // get all employees
 
-router.get('/employee', centerController.getEmployees);
+router.post('/getemployee', centerController.getEmployees);
 
 // get an employee of a center
 
-router.get('/employee/:empId', centerController.getEmployee);
+router.post('/employee/:empId', centerController.getEmployee);
 
 // add an employee to a canter
 
@@ -85,10 +85,10 @@ router.post('/employee', [
       status: "failed",
       showQuickNotification: true,
       message: "Invalid inputs",
-      error: error.array(),
+      error: errors.array(),
     });
   }
-  centerController.updateProfile(req, res, next);
+  centerController.addEmployee(req, res, next);
 });
 
 // update employee of a center
@@ -130,11 +130,11 @@ router.delete('/settings/employee/:empId', centerController.deleteEmployee);
 
 // get all roles of center
 
-router.get('/settings/roles', centerController.getAllRoles);
+router.post('/settings/roles', centerController.getAllRoles);
 
 // get one role of a center
 
-router.get('/settings/roles/:roleId', centerController.getRole);
+router.post('/settings/roles/:roleId', centerController.getRole);
 
 // add role of center
 
@@ -178,11 +178,11 @@ router.delete('/settings/roles/:roleId', centerController.deleteRole);
 
 // get all parts
 
-router.get('/inventory', centerController.getInventory);
+router.post('/inventory', centerController.getInventory);
 
 // get a part
 
-router.get('/inventory/:partId', centerController.getPart);
+router.post('/inventory/:partId', centerController.getPart);
 
 // add a part
 router.post('/inventory', [
@@ -231,11 +231,11 @@ router.delete('/inventory/:partId', centerController.deletePart);
 
 // get all clients
 
-router.get('/client', centerController.getClients);
+router.post('/getclients', centerController.getClients);
 
 // get one client
 
-router.get('/client/:clientId', );
+router.post('/client/:clientId', );
 
 // add one client
 
@@ -279,11 +279,11 @@ router.post('/client/:clientId', [
 
 // get all ongoing services
 
-router.get('/onGoingServices', centerController.getOnGoingServices);
+router.post('/onGoingServices', centerController.getOnGoingServices);
 
 // get one ongoing service
 
-router.get('/onGoingServices/:serviceId', centerController.getOnGoingService);
+router.post('/onGoingServices/:serviceId', centerController.getOnGoingService);
 
 // add one ongoing service
 
@@ -335,14 +335,14 @@ router.patch('/onGoingServices', [
 
 // get all service records
 
-router.get('/services', centerController.getServices);
+router.post('/services', centerController.getServices);
 
 // get a service record
 
-router.get('/services/:serviceId', centerController.getService);
+router.post('/services/:serviceId', centerController.getService);
 
 // get all services for one vehicle
 
-router.get('/services/history/:vehicleId', centerController.getVehicleServiceHistory)
+router.post('/services/history/:vehicleId', centerController.getVehicleServiceHistory)
 
 module.exports = router;
