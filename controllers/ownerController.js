@@ -98,7 +98,7 @@ exports.getVehicles = catchAsync(async (req, res, next) => {
   `, [owner_id]);
 
   return res.status(200).json({
-    status: "succes",
+    status: "success",
     showQuickNotification: true,
     message: "Retrieved vehicles successfully...",
     data: {

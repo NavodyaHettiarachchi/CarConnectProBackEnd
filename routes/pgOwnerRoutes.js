@@ -41,13 +41,13 @@ router.patch('/profile/:userId', [
 
 // Get owner vehicles
 
-router.get('/vehicles', ownerController.getVehicles);
+router.post('/vehicles', ownerController.getVehicles);
 
 // Get owner vehicle data
 
-router.get('/vehicles/:vehicleId', ownerController.getVehicle);
+router.post('/vehicles/:vehicleId', ownerController.getVehicle);
 
 // Get Vehicle history
-router.get('/vehicles/:vehicleId/history', ownerController.getVehicleHistory);
+router.post('/vehicles/:vehicleId/history', ownerController.getVehicleHistory);
 
 module.exports = router;
