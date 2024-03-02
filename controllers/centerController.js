@@ -216,7 +216,9 @@ exports.addEmployee = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       INSERT INTO "${req.body.schema}"."employee" (name, username, salt, password, profile_pic, email, contact, dob, nic, gender, manager_id, designation, salary, roles, "isActive")
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-      RETURNING id, name, username, profile_pic, email, contact, nic, gender, manager_id, designation, salary, roles, "isActive"
+      RETURNING et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.nic, et.gender, et.manager_id, mt.name AS manager_name, mt.designation AS manager_designation et.designation, et.salary, et.roles, et."isActive"
+      FROM "${req.body.schema}"."employee" AS et
+      LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id;
     `, [
     empData.name,
     empData.username,
@@ -237,7 +239,7 @@ exports.addEmployee = catchAsync(async (req, res, next) => {
 
   // logging
   await logController.logLoginRegister({ id: result.rows[0].id, type: 'Employee of ' + req.body.schema.toString(), username: result.rows[0].username, action: "Register" }, res, next);
-  await insertToSchemaMapping(username, "carConnectPro");
+  await insertToSchemaMapping(username, req.body.schema);
 
   return res.status(201).json({
     status: "success",

@@ -22,7 +22,7 @@ const signToken = (id) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/23
 
-const createSendToken = (user, statusCode, req, res) => {
+const createSendToken = (user, schema, statusCode, req, res) => {
   const token = signToken(user.id);
 
   const cookieOptions = {
@@ -81,7 +81,7 @@ exports.login = async (req, res, next) => {
     delete userData.password;
     delete userData.salt;
 
-    createSendToken(userData, 200, req, res);
+    createSendToken(userData, schema, 200, req, res);
   } else {
 
     let table = "";
@@ -118,6 +118,6 @@ exports.login = async (req, res, next) => {
     // If user is found and password is correct
     delete userData.password;
     delete userData.salt;
-    createSendToken(userData, 200, req, res);
+    createSendToken(userData, schema, 200, req, res);
   }
 };
