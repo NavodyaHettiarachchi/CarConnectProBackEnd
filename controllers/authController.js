@@ -41,6 +41,7 @@ const createSendToken = (user, schema, statusCode, req, res) => {
     showQuickNotification: true,
     data: {
       user,
+      schema,
     },
   });
 };
