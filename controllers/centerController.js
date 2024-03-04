@@ -128,7 +128,7 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
 
 exports.getEmployees = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
-    SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
+    SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
       FROM "${req.body.schema}"."employee" AS et LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id
   `);
 
@@ -150,7 +150,7 @@ exports.getEmployees = catchAsync(async (req, res, next) => {
 
 exports.getEmployee = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
-    SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
+    SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
     FROM "${req.body.schema}"."employee" AS et LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
   `, [req.params.empId]);
 
@@ -216,9 +216,7 @@ exports.addEmployee = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       INSERT INTO "${req.body.schema}"."employee" (name, username, salt, password, profile_pic, email, contact, dob, nic, gender, manager_id, designation, salary, roles, "isActive")
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-      RETURNING et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.nic, et.gender, et.manager_id, mt.name AS manager_name, mt.designation AS manager_designation et.designation, et.salary, et.roles, et."isActive"
-      FROM "${req.body.schema}"."employee" AS et
-      LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id;
+      RETURNING id
     `, [
     empData.name,
     empData.username,
@@ -237,8 +235,13 @@ exports.addEmployee = catchAsync(async (req, res, next) => {
     empData.isActive
   ]);
 
+  const result1 = await pool.query(`
+  SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
+  FROM "${req.body.schema}"."employee" AS et LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
+  `, [result.rows[0].id]);
+
   // logging
-  await logController.logLoginRegister({ id: result.rows[0].id, type: 'Employee of ' + req.body.schema.toString(), username: result.rows[0].username, action: "Register" }, res, next);
+  await logController.logLoginRegister({ id: result1.rows[0].id, type: 'Employee of ' + req.body.schema.toString(), username: result1.rows[0].username, action: "Register" }, res, next);
   await insertToSchemaMapping(username, req.body.schema);
 
   return res.status(201).json({
@@ -246,7 +249,7 @@ exports.addEmployee = catchAsync(async (req, res, next) => {
     showQuickNotification: true,
     message: "Added Employee Successfully...",
     data: {
-      empData: result.rows[0],
+      empData: result1.rows[0],
     }
   });
 });
@@ -277,18 +280,23 @@ exports.updateEmployee = catchAsync(async (req, res, next) => {
     }
   }
   sql = sql.substring(0, sql.length - 2);
-  sql = sql.concat(" WHERE id = $", count.toString(), " RETURNING id, name, username, profile_pic, email, contact, nic, gender, manager_id, designation, salary, roles, \"isActive\"");
+  sql = sql.concat(" WHERE id = $", count.toString(), " RETURNING id");
   dataArr.push(req.params.empId);
 
   const result = await pool.query(sql, dataArr);
 
-  await logController.logProfileChange({id: result.rows[0].id, username: result.rows[0].username, type: "Employee of " + req.body.schema, action: "Update", updatedFields: req.body }, res, next);
+  const result1 = await pool.query(`
+  SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
+  FROM "${req.body.schema}"."employee" AS et LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
+  `, [result.rows[0].id]);
+
+  await logController.logProfileChange({id: result1.rows[0].id, username: result1.rows[0].username, type: "Employee of " + req.body.schema, action: "Update", updatedFields: req.body }, res, next);
   return res.status(200).json({
     status: "success",
     showQuickNotification: true,
     message: "Updated employee profile successfully...",
     data: {
-      empData: result.rows[0],
+      empData: result1.rows[0],
     }
   });
 });
