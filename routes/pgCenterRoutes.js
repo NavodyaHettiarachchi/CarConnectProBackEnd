@@ -96,16 +96,6 @@ router.post('/employee', [
 router.patch('/employee/:empId', [
   check('name').optional().trim().isString().withMessage('Name can only be a string'),
   check('contact').optional().isString().trim().isLength({ min: 10, max: 10 }).withMessage('Invalid phone number'),
-  check('gender').optional().isIn(['M', 'F', 'O']).withMessage('Invalid gender'),
-  check('dob').optional().isISO8601().toDate().withMessage('Invalid date of birth'),
-  check('profile_pic').optional().custom((value) => {
-    // Check if profile_pic is provided and is a valid bytea field
-    if (!value || !Buffer.isBuffer(value)) {
-      throw new Error('Invalid Profile Pic');
-    }
-    // If validation passes, return true
-    return true;
-  }),
   check('designation').optional().trim().isString().withMessage('Invalid Designation'),
   check('manager_id').optional().trim().isInt().withMessage('Invalid Manager ID'),
   check('salary').optional().isFloat().withMessage('Invalid salary'),

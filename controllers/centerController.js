@@ -128,7 +128,7 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
 
 exports.getEmployees = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
-    SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
+    SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
       FROM "${req.body.schema}"."employee" AS et LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id
   `);
 
@@ -150,7 +150,7 @@ exports.getEmployees = catchAsync(async (req, res, next) => {
 
 exports.getEmployee = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
-    SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
+    SELECT et.id, et.name, et.username, et.profile_pic, et.dob, et.email, et.contact, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
     FROM "${req.body.schema}"."employee" AS et LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
   `, [req.params.empId]);
 
@@ -216,9 +216,7 @@ exports.addEmployee = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       INSERT INTO "${req.body.schema}"."employee" (name, username, salt, password, profile_pic, email, contact, dob, nic, gender, manager_id, designation, salary, roles, "isActive")
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-      RETURNING et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.nic, et.gender, et.manager_id, mt.name AS manager_name, mt.designation AS manager_designation et.designation, et.salary, et.roles, et."isActive"
-      FROM "${req.body.schema}"."employee" AS et
-      LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id;
+      RETURNING id
     `, [
     empData.name,
     empData.username,
@@ -238,7 +236,12 @@ exports.addEmployee = catchAsync(async (req, res, next) => {
   ]);
 
   // logging
-  await logController.logLoginRegister({ id: result.rows[0].id, type: 'Employee of ' + req.body.schema.toString(), username: result.rows[0].username, action: "Register" }, res, next);
+  const result1 = await pool.query(`
+  SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
+  FROM "${req.body.schema}"."employee" AS et LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
+  `, [result.rows[0].id]);
+
+  await logController.logLoginRegister({ id: result1.rows[0].id, type: 'Employee of ' + req.body.schema.toString(), username: result1.rows[0].username, action: "Register" }, res, next);
   await insertToSchemaMapping(username, req.body.schema);
 
   return res.status(201).json({
@@ -246,7 +249,7 @@ exports.addEmployee = catchAsync(async (req, res, next) => {
     showQuickNotification: true,
     message: "Added Employee Successfully...",
     data: {
-      empData: result.rows[0],
+      empData: result1.rows[0],
     }
   });
 });
@@ -257,7 +260,7 @@ exports.addEmployee = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.updateEmployee = catchAsync(async (req, res, next) => { 
+exports.updateEmployee = catchAsync(async (req, res, next) => {
   let sql = `
       UPDATE "${req.body.schema}"."employee" SET
     `;
@@ -277,18 +280,23 @@ exports.updateEmployee = catchAsync(async (req, res, next) => {
     }
   }
   sql = sql.substring(0, sql.length - 2);
-  sql = sql.concat(" WHERE id = $", count.toString(), " RETURNING id, name, username, profile_pic, email, contact, nic, gender, manager_id, designation, salary, roles, \"isActive\"");
+  sql = sql.concat(" WHERE id = $", count.toString(), " RETURNING id");
   dataArr.push(req.params.empId);
 
   const result = await pool.query(sql, dataArr);
 
-  await logController.logProfileChange({id: result.rows[0].id, username: result.rows[0].username, type: "Employee of " + req.body.schema, action: "Update", updatedFields: req.body }, res, next);
+  const result1 = await pool.query(`
+  SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
+  FROM "${req.body.schema}"."employee" AS et LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
+  `, [result.rows[0].id]);
+
+  await logController.logProfileChange({ id: result1.rows[0].id, username: result1.rows[0].username, type: "Employee of " + req.body.schema, action: "Update", updatedFields: req.body }, res, next);
   return res.status(200).json({
     status: "success",
     showQuickNotification: true,
     message: "Updated employee profile successfully...",
     data: {
-      empData: result.rows[0],
+      empData: result1.rows[0],
     }
   });
 });
@@ -303,7 +311,7 @@ exports.deleteEmployee = catchAsync(async (req, res, next) => {
   await pool.query(`
       DELETE FROM "${req.body.schema}"."employee" WHERE id = $1
     `, [req.params.empId]);
-  
+
   return res.status(200).json({
     status: "success",
     showQuickNotification: true,
@@ -317,7 +325,7 @@ exports.deleteEmployee = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.getAllRoles = catchAsync(async (req, res, next) => { 
+exports.getAllRoles = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       SELECT id, name, description, privileges 
       FROM "${req.body.schema}"."roles"
@@ -352,7 +360,7 @@ exports.getRole = catchAsync(async (req, res, next) => {
       error: error,
     });
   }
-  
+
   return res.status(200).json({
     status: "success",
     showQuickNotification: true,
@@ -370,7 +378,7 @@ exports.getRole = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 
-exports.addRole = catchAsync(async (req, res, next) => { 
+exports.addRole = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
         INSERT INTO "${req.body.schema}".roles (name, description, privileges) 
         VALUES ($1, $2, $3) RETURNING *
@@ -392,7 +400,7 @@ exports.addRole = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.updateRole = catchAsync(async (req, res, next) => { 
+exports.updateRole = catchAsync(async (req, res, next) => {
   let sql = `UPDATE "${req.body.schema}"."roles" SET `
   const dataArr = [];
   let count = 1;
@@ -425,7 +433,7 @@ exports.updateRole = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.deleteRole = catchAsync(async (req, res, next) => { 
+exports.deleteRole = catchAsync(async (req, res, next) => {
   await pool.query(`
       DELETE FROM "${req.body.schema}"."roles" WHERE id = $1
     `, [req.params.roleId]);
@@ -444,7 +452,7 @@ exports.deleteRole = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 
-exports.getInventory = catchAsync(async (req, res, next) => { 
+exports.getInventory = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       SELECT * FROM "${req.body.schema}"."part"
     `);
@@ -465,7 +473,7 @@ exports.getInventory = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.getPart = catchAsync(async (req, res, next) => { 
+exports.getPart = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       SELECT * FROM "${req.body.schema}"."part" WHERE part_id = $1
     `, [req.params.partId]);
@@ -478,7 +486,7 @@ exports.getPart = catchAsync(async (req, res, next) => {
       error: error,
     });
   }
-  
+
   return res.status(200).json({
     status: "success",
     showQuickNotification: true,
@@ -495,7 +503,7 @@ exports.getPart = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.addPart = catchAsync(async (req, res, next) => { 
+exports.addPart = catchAsync(async (req, res, next) => {
   const { name, description, manufacture_country, quantity, price } = req.body;
   const result = await pool.query(`
       INSERT INTO "${req.body.schema}"."part" (name, description, manufacture_country, quantity, price)
@@ -552,7 +560,7 @@ exports.updatePart = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.deletePart = catchAsync(async (req, res, next) => { 
+exports.deletePart = catchAsync(async (req, res, next) => {
   await pool.query(`
       DELETE FROM "${req.body.schema}"."part" WHERE part_id = $1
     `, [req.params.partId]);
@@ -570,7 +578,7 @@ exports.deletePart = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.getClients = catchAsync(async (req, res, next) => { 
+exports.getClients = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       SELECT ct.id, ct.vehicle_id, vt.number_plate, vt.model, vt.make, vt.engine_no, vt.chassis_no, tt.description AS transmission_type, ft.description AS fuel_type, vt.seating_capacity, ct.date_of_reg AS client_reg_date, ct.mileage_on_reg, ct.owner AS owner_id, ot.name AS owner_name, ot.phone AS owner_contact, ot.email as owner_email 
       FROM "${req.body.schema}"."clients" AS ct
@@ -600,7 +608,7 @@ exports.getClients = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.getClient = catchAsync(async (req, res, next) => { 
+exports.getClient = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
     SELECT ct.id, ct.vehicle_id, vt.number_plate, vt.model, vt.make, vt.engine_no, vt.chassis_no, tt.description AS transmission_type, ft.description AS fuel_type, vt.seating_capacity, ct.date_of_reg AS client_reg_date, ct.mileage_on_reg, ct.owner AS owner_id, ot.name AS owner_name, ot.phone AS owner_contact, ot.email as owner_email 
     FROM "${req.body.schema}"."clients" AS ct
@@ -614,7 +622,7 @@ exports.getClient = catchAsync(async (req, res, next) => {
     ON ct.owner = ot.id
     WHERE ct.id = $1;
   `, [req.params.clientId]);
-  
+
   if (result.rows.length === 0) {
     return res.status(404).json({
       status: "fail",
@@ -640,7 +648,7 @@ exports.getClient = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.addClient = catchAsync(async (req, res, next) => { 
+exports.addClient = catchAsync(async (req, res, next) => {
   const { vehicle_id, date_of_reg, mileage, owner_id } = req.body;
 
   const result = await pool.query(`
@@ -699,7 +707,7 @@ exports.updateClient = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.getOnGoingServices = catchAsync(async (req, res, next) => { 
+exports.getOnGoingServices = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       SELECT 
         sr.id AS service_record_id,
@@ -736,7 +744,7 @@ exports.getOnGoingServices = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.getOnGoingService = catchAsync(async (req, res, next) => { 
+exports.getOnGoingService = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       SELECT
         sr.id,
@@ -782,7 +790,7 @@ exports.getOnGoingService = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.addOnGoingService = catchAsync(async (req, res, next) => { 
+exports.addOnGoingService = catchAsync(async (req, res, next) => {
   const { vehicle_id, service_date, description, mileage, cost, details, isOngoing, technician_ids } = req.body;
 
   const result = await pool.query(`
@@ -860,7 +868,7 @@ exports.updateOnGoingService = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.getServices = catchAsync(async (req, res, next) => { 
+exports.getServices = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       SELECT * FROM "${req.body.schema}"."service_record" WHERE isOngoing = $1
     `, [false]);
@@ -881,7 +889,7 @@ exports.getServices = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.getService = catchAsync(async (req, res, next) => { 
+exports.getService = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       SELECT * FROM "${req.body.schema}"."service_record" WHERE isOngoing = $1 AND id = $2
     `, [false, req.body.id]);
@@ -911,7 +919,7 @@ exports.getService = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/24
 
-exports.getVehicleServiceHistory = catchAsync(async (req, res, next) => { 
+exports.getVehicleServiceHistory = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       SELECT * FROM "${req.body.schema}"."service_record" WHERE isOngoing = $1 AND vehicle_id = $2
     `, [false, req.params.vehicleId]);
