@@ -130,7 +130,7 @@ router.delete('/settings/employee/:empId', centerController.deleteEmployee);
 
 // get all roles of center
 
-router.post('/settings/roles', centerController.getAllRoles);
+router.post('/settings/getroles', centerController.getAllRoles);
 
 // get one role of a center
 
@@ -138,7 +138,7 @@ router.post('/settings/roles/:roleId', centerController.getRole);
 
 // add role of center
 
-router.post('/settings/roles', [
+router.post('/settings/addroles', [
   check('name').isString().notEmpty().trim().withMessage('Invalid Name'),
   check('description').isString().trim().notEmpty().withMessage('Invalid Descrition'),
 ], async (req, res, next) => {

@@ -389,7 +389,7 @@ exports.addRole = catchAsync(async (req, res, next) => {
     showQuickNotification: true,
     message: "Added role successfully",
     data: {
-      roles: result.rows
+      role: result.rows
     }
   });
 });
