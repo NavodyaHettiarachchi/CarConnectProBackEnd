@@ -224,6 +224,13 @@ async function createSchemaAndTables(schemaName) {
       technician_id INTEGER NOT NULL REFERENCES ${schemaName}.employee(id)
     )`);
 
+    // services types table
+    await client.query(`CREATE TABLE ${schemaName}.services(
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL,
+      cost NUMERIC(12,2) NOT NULL
+    )`)
 
   } catch (error) {
     console.error('Error creating schema and tables:', error.message);

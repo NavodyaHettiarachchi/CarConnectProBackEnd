@@ -130,7 +130,7 @@ router.delete('/settings/employee/:empId', centerController.deleteEmployee);
 
 // get all roles of center
 
-router.post('/settings/roles', centerController.getAllRoles);
+router.post('/settings/getroles', centerController.getAllRoles);
 
 // get one role of a center
 
@@ -138,7 +138,7 @@ router.post('/settings/roles/:roleId', centerController.getRole);
 
 // add role of center
 
-router.post('/settings/roles', [
+router.post('/settings/addroles', [
   check('name').isString().notEmpty().trim().withMessage('Invalid Name'),
   check('description').isString().trim().notEmpty().withMessage('Invalid Descrition'),
 ], async (req, res, next) => {
@@ -166,7 +166,7 @@ router.patch('/settings/roles/:roleId', [
       status: "failed",
       showQuickNotification: true,
       message: "Invalid inputs",
-      error: error.array(),
+      error: errors.array(),
     });
   }
   centerController.updateProfile(req, res, next);
@@ -198,7 +198,7 @@ router.post('/inventory', [
       status: "failed",
       showQuickNotification: true,
       message: "Invalid inputs",
-      error: error.array(),
+      error: errors.array(),
     });
   }
   centerController.addPart(req, res, next);
@@ -219,7 +219,7 @@ router.patch('/inventory/:partId', [
       status: "failed",
       showQuickNotification: true,
       message: "Invalid inputs",
-      error: error.array(),
+      error: errors.array(),
     });
   }
   centerController.updatePart(req, res, next);
@@ -228,6 +228,62 @@ router.patch('/inventory/:partId', [
 // delete a part
 
 router.delete('/inventory/:partId', centerController.deletePart);
+
+// get all service types
+
+router.get('/admin/serviceTypes', centerController.getServiceTypes);
+
+// get a service type by ID
+
+router.get('/admin/serviceTypes/:serviceId', centerController.getServiceTypeByID);
+
+// add a service type
+
+router.post('/admin/serviceTypes',
+  [
+    check('name').isString().withMessage('Invalid Name'),
+    check('description').isString().withMessage('Invalid Description'),
+    check('cost').isFloat().withMessage('Invalid Cost'),
+  ],
+  async (req, res, next) => { 
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        status: "failed",
+        showQuickNotification: true,
+        message: "Invalid inputs",
+        error: errors.array(),
+      });
+    }
+    centerController.addServiceType(req, res, next);
+  }
+);
+
+// edit a service type
+
+router.post('/admin/serviceTypes/:serviceId',
+  [
+    check('name').optional().isString().withMessage('Invalid Name'),
+    check('description').optional().isString().withMessage('Invalid Description'),
+    check('cost').optional().isFloat().withMessage('Invalid Cost'),
+  ],
+  async (req, res, next) => { 
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        status: "failed",
+        showQuickNotification: true,
+        message: "Invalid inputs",
+        error: errors.array(),
+      });
+    }
+    centerController.editServiceType(req, res, next);
+  } 
+);
+
+// delete a service type
+
+router.delete('admin/serviceTypes/:serviceId', centerController.deleteServiceType);
 
 // get all clients
 
@@ -251,7 +307,7 @@ router.post('/client', [
       status: "failed",
       showQuickNotification: true,
       message: "Invalid inputs",
-      error: error.array(),
+      error: errors.array(),
     });
   }
   centerController.addClient(req, res, next);
@@ -271,7 +327,7 @@ router.post('/client/:clientId', [
       status: "failed",
       showQuickNotification: true,
       message: "Invalid inputs",
-      error: error.array(),
+      error: errors.array(),
     });
   }
   centerController.updateClient(req, res, next);
@@ -303,7 +359,7 @@ router.post('/onGoingServices', [
       status: "failed",
       showQuickNotification: true,
       message: "Invalid inputs",
-      error: error.array(),
+      error: errors.array(),
     });
   }
   centerController.addOnGoingService(req, res, next);
@@ -327,11 +383,15 @@ router.patch('/onGoingServices', [
       status: "failed",
       showQuickNotification: true,
       message: "Invalid inputs",
-      error: error.array(),
+      error: errors.array(),
     });
   }
   centerController.updateOnGoingService(req, res, next);
 });
+
+// delete a service type
+
+router.delete('/admin/serviceTypes/:serviceId', centerController.deleteServiceType);
 
 // get all service records
 
