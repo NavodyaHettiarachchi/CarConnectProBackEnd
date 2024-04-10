@@ -41,7 +41,7 @@ router.patch('profile/:id', [
       status: "failed",
       showQuickNotification: true,
       message: "Invalid inputs",
-      error: error.array(),
+      error: errors.array(),
     });
   }
   centerController.updateProfile(req, res, next);
@@ -118,7 +118,7 @@ router.patch('/employee/:empId', [
       status: "failed",
       showQuickNotification: true,
       message: "Invalid inputs",
-      error: error.array(),
+      error: errors.array(),
     });
   }
   centerController.updateEmployee(req,res, next);
@@ -148,7 +148,7 @@ router.post('/settings/addroles', [
       status: "failed",
       showQuickNotification: true,
       message: "Invalid inputs",
-      error: error.array(),
+      error: errors.array(),
     });
   }
   centerController.addRole(req, res, next);
