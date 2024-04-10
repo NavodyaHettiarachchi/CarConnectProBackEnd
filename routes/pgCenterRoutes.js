@@ -335,16 +335,16 @@ router.post('/client/:clientId', [
 
 // get all ongoing services
 
-router.post('/onGoingServices', centerController.getOnGoingServices);
+router.get('/onGoingServices', centerController.getOnGoingServices);
 
 // get one ongoing service
 
-router.post('/onGoingServices/:serviceId', centerController.getOnGoingService);
+router.get('/onGoingServices/:onGoingServiceId', centerController.getOnGoingService);
 
 // add one ongoing service
 
 router.post('/onGoingServices', [
-  check('vehicle_id').isInt().withMessage('Invalid vehicle'),
+  check('client_id').isInt().withMessage('Invalid vehicle'),
   check('service_date').isISO8601().withMessage('Invalid Date'),
   check('description').isString().withMessage('Invalid Description'),
   check('mileage').isFloat().withMessage('Invalid mileage'),
@@ -367,8 +367,8 @@ router.post('/onGoingServices', [
 
 // edit one ongoing service
 
-router.patch('/onGoingServices', [
-  check('vehicle_id').optional().isInt().withMessage('Invalid vehicle'),
+router.patch('/onGoingServices/:onGoingServiceId', [
+  check('client_id').optional().isInt().withMessage('Invalid vehicle'),
   check('service_date').optional().isISO8601().withMessage('Invalid Date'),
   check('description').optional().isString().withMessage('Invalid Description'),
   check('mileage').optional().isFloat().withMessage('Invalid mileage'),
@@ -376,7 +376,7 @@ router.patch('/onGoingServices', [
   check('details').optional().isJSON().withMessage('Invalid Details'),
   check('isOngoing').optional().isBoolean().withMessage('Invalid boolean value'),
   check('technician_ids').optional().isArray().withMessage('Please select technicians working on vehicle'),
-], async (req, res) => {
+], async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
