@@ -572,6 +572,128 @@ exports.deletePart = catchAsync(async (req, res, next) => {
   });
 });
 
+// @ DESCRIPTION      => Get services of a center
+// @ ENDPOINT         => /admin/serviceTypes
+// @ ACCESS           => super admin of center || any employee who has privileges
+// @ CREATED BY       => Navodya Hettiarachchi
+// @ CREATED DATE     => 2024/04/09
+
+exports.getServiceTypes = catchAsync(async (req, res, next) => {
+  const result = await pool.query(`
+    SELECT * FROM "${req.body.schema}"."services";
+  `);
+  return res.status(200).json({
+    status: "success",
+    showQuickNotification: true,
+    message: "Successfully retrieved service types...",
+    data: {
+      serviceTypes: result.rows,
+    },
+  });
+});
+
+// @ DESCRIPTION      => Get a service of a center
+// @ ENDPOINT         => /admin/serviceTypes/:serviceId
+// @ ACCESS           => super admin of center || any employee who has privileges
+// @ CREATED BY       => Navodya Hettiarachchi
+// @ CREATED DATE     => 2024/04/09
+
+exports.getServiceTypeByID = catchAsync(async (req, res, next) => {
+  const result = await pool.query(`
+    SELECT * FROM "${req.body.schema}"."services" WHERE id = $1
+  `, [req.params.serviceId]);
+
+  console.log(result)
+  
+  if (result.rowCount === 0) { 
+    return res.status(404).json({
+      status: "failed",
+      showQuickNotification: true,
+      message: "Required ID does not exist...",
+    })
+  }
+  return res.status(200).json({
+    status: "success",
+    showQuickNotification: true,
+    message: "Successfully retrieved service type...",
+    data: {
+      service: result.rows[0],
+    },
+  })
+});
+
+// @ DESCRIPTION      => Add services of a center
+// @ ENDPOINT         => /admin/serviceTypes
+// @ ACCESS           => super admin of center || any employee who has privileges
+// @ CREATED BY       => Navodya Hettiarachchi
+// @ CREATED DATE     => 2024/04/09
+
+exports.addServiceType = catchAsync(async (req, res, next) => { 
+  const result = await pool.query(`
+    INSERT INTO "${req.body.schema}"."services" (name, description, cost) 
+    VALUES ($1, $2, $3) RETURNING *
+  `, [req.body.name, req.body.description, req.body.cost]);
+
+  return res.status(201).json({
+    status: "success",
+    showQuickNotification: true,
+    message: "Successfully added service...",
+    data: {
+      service: result.rows[0],
+    }
+  });
+})
+
+// @ DESCRIPTION      => edit services of a center
+// @ ENDPOINT         => /admin/serviceTypes/:serviceId
+// @ ACCESS           => super admin of center || any employee who has privileges
+// @ CREATED BY       => Navodya Hettiarachchi
+// @ CREATED DATE     => 2024/04/09
+
+exports.editServiceType = catchAsync(async (req, res, next) => {
+  let sql = `UPDATE "${req.body.schema}"."services" SET `;
+  const dataArr = [];
+  let count = 1;
+  for (let key in req.body) {
+    if (key !== 'id' && key !== 'schema') {
+      sql = sql.concat((key).toString(), " = $", count.toString(), ", ");
+      count++;
+      dataArr.push(req.body[key]);
+    }
+  }
+  sql = sql.substring(0, sql.length - 2);
+  sql = sql.concat(" WHERE id = $", count.toString(), " RETURNING *");
+  dataArr.push(req.params.serviceId);
+
+  const result = await pool.query(sql, dataArr);
+  return res.status(200).json({
+    status: "success",
+    showQuickNotification: true,
+    message: "Updated service successfully...",
+    data: {
+      service: result.rows[0],
+    }
+  });
+});
+
+// @ DESCRIPTION      => delete service type of a center
+// @ ENDPOINT         => /admin/serviceTypes/:serviceId
+// @ ACCESS           => super admin of center || any employee who has privileges
+// @ CREATED BY       => Navodya Hettiarachchi
+// @ CREATED DATE     => 2024/04/10
+
+exports.deleteServiceType = catchAsync(async (req, res, next) => { 
+  await pool.query(`
+    DELETE FROM "${req.body.schema}"."services" WHERE id = $1
+  `, [req.params.serviceId]);
+
+  return res.status(200).json({
+    status: "success",
+    showQuickNotification: true,
+    message: "Service deleted successfully..."
+  });
+})
+
 // @ DESCRIPTION      => Get clients of a center
 // @ ENDPOINT         => /center/clients
 // @ ACCESS           => super admin of center || any employee who has privileges
