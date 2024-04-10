@@ -831,24 +831,24 @@ exports.updateClient = catchAsync(async (req, res, next) => {
 
 exports.getOnGoingServices = catchAsync(async (req, res, next) => { 
   const result = await pool.query(`
-      SELECT 
-        sr.id AS service_record_id,
-        sr.vehicle_id,
-        sr.service_date,
-        sr.description,
-        sr.mileage,
-        sr.cost,
-        sr.details,
-        array.agg(st.technician_id) AS technicians
-      FROM 
-        "${req.body.schema}"."service_records" AS sr
-      JOIN 
-        "${req.body.schema}"."service_technician" AS st ON sr.id = st.service_id
-      WHERE 
-        sr.isOngoing = $1
-      GROUP BY
-        sr.id, sr.vehicle_id, sr.service_date, sr.description, sr.mileage, sr.cost, sr.details
-    `, [true]);
+    SELECT 
+      sr.id AS service_record_id,
+      sr.client_id,
+      sr.service_date,
+      sr.description,
+      sr.mileage,
+      sr.cost,
+      sr.details,
+      array_agg(st.technician_id) AS technicians
+    FROM 
+      "${req.body.schema}"."service_records" AS sr
+    LEFT JOIN 
+      "${req.body.schema}"."service_technician" AS st ON sr.id = st.service_id
+    WHERE 
+      sr."isOngoing" = $1
+    GROUP BY
+      sr.id, sr.client_id, sr.service_date, sr.description, sr.mileage, sr.cost
+  `, [false]);
 
   return res.status(200).json({
     status: "success",
@@ -870,22 +870,22 @@ exports.getOnGoingService = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       SELECT
         sr.id,
-        sr.vehicle_id,
+        sr.client_id,
         sr.service_date,
         sr.description,
         sr.mileage,
         sr.cost,
         sr.details,
-        array.agg(st.technician_id) AS technicians
+        array_agg(st.technician_id) AS technicians
       FROM
         "${req.body.schema}"."service_records" AS sr
       JOIN 
         "${req.body.schema}"."service_technician" AS st ON sr.id = st.service_id
       WHERE 
-        sr.isOngoing = $1 AND sr.id = $2
+        sr."isOngoing" = $1 AND sr.id = $2
       GROUP BY
-        sr.id, sr.vehicle_id, sr.service_date, sr.description, sr.mileage, sr.cost, sr.details
-    `, [true, req.params.serviceId]);
+        sr.id, sr.client_id, sr.service_date, sr.description, sr.mileage, sr.cost
+    `, [true, req.params.onGoingServiceId]);
 
   if (result.rows.length === 0) {
     return res.status(404).json({
@@ -913,20 +913,19 @@ exports.getOnGoingService = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 exports.addOnGoingService = catchAsync(async (req, res, next) => { 
-  const { vehicle_id, service_date, description, mileage, cost, details, isOngoing, technician_ids } = req.body;
+  const { client_id, service_date, description, mileage, cost, details, isOngoing, technician_ids } = req.body;
 
   const result = await pool.query(`
-      INSERT INTO "${req.body.schema}"."service_records" (vehicle_id, service_date, description, mileage, cost, details, isOngoing)
-      VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *
-    `, [vehicle_id, service_date, description, mileage, cost, details, isOngoing]);
-
-
-  for (let i = 0; i < technician_ids.length; i++) {
-    await pool.query(`
-        INSERT INTO "${req.body.schema}"."service_technician" (service_id, technicin_id) VALUES ($1, $2)
-      `, [result.rows[0].id], technician_ids[i]);
-  }
-
+    WITH inserted_record AS (
+      INSERT INTO "${req.body.schema}"."service_records" (client_id, service_date, description, mileage, cost, details, "isOngoing")
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id
+    )
+    INSERT INTO "${req.body.schema}"."service_technician" (service_id, technician_id)
+    SELECT inserted_record.id, technician_id
+    FROM inserted_record, unnest($8::int[]) AS technician_id
+`, [client_id, service_date, description, mileage, cost, details, isOngoing, technician_ids]);
+  
   return res.status(201).json({
     status: "success",
     showQuickNotification: true,
@@ -944,33 +943,49 @@ exports.addOnGoingService = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 exports.updateOnGoingService = catchAsync(async (req, res, next) => {
-  const { vehicle_id, service_date, description, mileage, cost, details, isOngoing, technician_ids } = req.body;
+  const { client_id, service_date, description, mileage, cost, details, isOngoing, technician_ids } = req.body;
 
-  let sql = `UPDATE "${req.body.schema}"."service_records" SET `
+  let sql = `UPDATE "${req.body.schema}"."service_records" SET `;
   const dataArr = [];
   let count = 1;
   for (let key in req.body) {
+    console.log("key ", key);
     if (key !== 'id' && key !== 'schema' && key !== 'technician_ids') {
       sql = sql.concat((key).toString(), " = $", count.toString(), ", ");
       count++;
-      dataArr.push(req.body[key])
+      dataArr.push(req.body[key]);
     }
   }
-  sql = sql.substring(0, sql.slice(0, -2));
+  sql = sql.slice(0, -2);
   sql = sql.concat(" WHERE id = $", count.toString(), " RETURNING *");
-  dataArr.push(req.body.id);
+  dataArr.push(req.params.onGoingServiceId);
   const result = await pool.query(sql, dataArr);
-
-  const techs = await pool.query(`
+  let updatedRes = {
+    serviceRecord: result.rows,
+  }
+  if ('technician_ids' in req.body) { 
+    const techs = await pool.query(`
       SELECT technician_id FROM "${req.body.schema}"."service_technician" WHERE service_id = $1
     `, [req.body.id]);
 
-  for (let i = 0; i < technician_ids.length; i++) {
-    const found = techs.rows.some(tech => tech == technician_ids[i]);
-    if (!found) {
-      await pool.query(`
-          INSERT INTO "${req.body.schema}"."service_technician" (service_id, technicin_id) VALUES ($1, $2)
-        `, [result.rows[0].id], technician_ids[i]);
+    let techSQL = `INSERT INTO "${req.body.schema}"."service_technician" (service_id, technician_id) VALUES`
+    let c = 2;
+    let valArr = [];
+    valArr.push(req.params.onGoingServiceId);
+    for (let i = 1; i < req.body.technician_ids.length; i++) { 
+      const found = technician_ids.includes(req.body.technician_ids[i]);
+      if (!found) {
+        techSQL = techSQL.concat('($1, $' + c.toString() + '),')
+        valArr.push(req.body.technician_ids[i]);
+        c++;
+      }
+    }
+    techSQL = techSQL.slice(0, -1);
+    techSQL = techSQL.concat('RETURNING *');
+    console.log(techSQL, valArr);
+    if (c !== 2) { 
+      const updatedTechs = await pool.query(techSQL, valArr);
+      updatedRes.techs = updatedTechs.rows;
     }
   }
 
@@ -979,7 +994,7 @@ exports.updateOnGoingService = catchAsync(async (req, res, next) => {
     showQuickNotification: true,
     message: "Successfully updagted ongoing service...",
     data: {
-      osg: result.rows[0],
+      osg: updatedRes,
     }
   });
 });
@@ -992,7 +1007,7 @@ exports.updateOnGoingService = catchAsync(async (req, res, next) => {
 
 exports.getServices = catchAsync(async (req, res, next) => { 
   const result = await pool.query(`
-      SELECT * FROM "${req.body.schema}"."service_record" WHERE isOngoing = $1
+      SELECT * FROM "${req.body.schema}"."service_record" WHERE "isOngoing" = $1
     `, [false]);
 
   return res.status(200).json({
