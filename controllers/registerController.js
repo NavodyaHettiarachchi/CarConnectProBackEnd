@@ -1,6 +1,6 @@
 const pool = require('../db/db');
 const crypto = require('crypto');
-const logController = require('../models/loginRegisterLogs.model');
+const logController = require('../controllers/logController');
 const catchAsync = require('../utils/catchAsync');
 const { error } = require('console');
 const AppError = require('../utils/appError');
@@ -298,23 +298,23 @@ exports.register = catchAsync(async (req, res, next) => {
       }
     });
   } else {
-    const { username, password, name, street_1, street_2, city, province, phone, email, type } = req.body;
+    const { username, password, name, street_1, street_2, city, province, phone, email, center_type } = req.body;
     const salt = generateSalt();
     const pwdhash = hashPassword(password, salt);
 
-    let centerType = '';
+  
     let schemaName = ''
-    switch (type) {
+    switch (center_type) {
       case 'S':
-        centerType = type;
+        
         schemaName = `service_${name.toLowerCase().replace(/\s+/g, '_')}`;
         break
       case 'R':
-        centerType = type;
+        
         schemaName = `repair_${name.toLowerCase().replace(/\s+/g, '_')}`;
         break;
       case 'B':
-        centerType = type;
+        
         schemaName = `service_repair_${name.toLowerCase().replace(/\s+/g, '_')}`;
         break;
       default:
@@ -322,7 +322,7 @@ exports.register = catchAsync(async (req, res, next) => {
     }
 
     let centerData = {
-      centerType,
+      center_type,
       username,
       salt,
       pwdhash,

@@ -15,9 +15,10 @@ router.post('/',
     check('province').trim().isString().withMessage('Invalid Province'),
     check('phone').isString().trim().isLength({ min: 10, max: 10 }).withMessage('Invalid phone number'),
     check('email').trim().isEmail().withMessage('Invalid Email'),
-    // conditional validation
-    check('gender').optional().isIn(['M', 'F', 'O']).withMessage('Invalid gender'),
+    // conditional validation .isISO8601().toDate().withMessage('Invalid date of birth'),
+    check('gender').optional().isIn(['M', 'F', 'O', 'null']).withMessage('Invalid gender'),
     check('dob').optional().isISO8601().toDate().withMessage('Invalid date of birth'),
+    check('cenertype').optional().isIn(['s', 'R', 'B']).withMessage('Invalid type'),
   ], async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -25,7 +26,7 @@ router.post('/',
         status: "failed",
         showQuickNotification: true,
         message: "Invalid inputs",
-        error: error.array(),
+        error:errors.array(),
       });
     }
     userController.register(req, res, next);
