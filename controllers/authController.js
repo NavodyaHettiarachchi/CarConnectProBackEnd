@@ -65,7 +65,7 @@ exports.login = async (req, res, next) => {
       new AppError("Invalid Username or Password", 404)
     )
   }
-
+  let userData;
   let schema = findSchema.rows[0].schema;
   const checkIfCenterSuperAdmin = await pool.query(`
       SELECT * FROM "carConnectPro"."center" 
@@ -76,17 +76,17 @@ exports.login = async (req, res, next) => {
     if (!comFunc.validatePassword(password, checkIfCenterSuperAdmin.rows[0].salt, checkIfCenterSuperAdmin.rows[0].password)) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
-    let userData = checkIfCenterSuperAdmin.rows[0];
+    userData = checkIfCenterSuperAdmin.rows[0];
     // login logs
     await logController.logLoginRegister({ id: userData.id, type: schema, username: userData.username, action: 'login' }, res, next);
     delete userData.password;
     delete userData.salt;
 
+    userData.schema = schema;
     createSendToken(userData, schema, 200, req, res);
   } else {
 
     let table = "";
-    let userData;
     if (schema == "carConnectPro") {
       table = "owner";
       const result = await pool.query(`

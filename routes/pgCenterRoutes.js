@@ -169,7 +169,7 @@ router.patch('/settings/roles/:roleId', [
       error: errors.array(),
     });
   }
-  centerController.updateProfile(req, res, next);
+  centerController.updateRole(req, res, next);
 });
 
 // delete role of a center
@@ -231,15 +231,15 @@ router.delete('/inventory/:partId', centerController.deletePart);
 
 // get all service types
 
-router.get('/admin/serviceTypes', centerController.getServiceTypes);
+router.post('/settings/serviceTypes', centerController.getServiceTypes);
 
 // get a service type by ID
 
-router.get('/admin/serviceTypes/:serviceId', centerController.getServiceTypeByID);
+router.post('/settings/serviceTypes/:serviceId', centerController.getServiceTypeByID);
 
 // add a service type
 
-router.post('/admin/serviceTypes',
+router.post('/settings/addServiceType',
   [
     check('name').isString().withMessage('Invalid Name'),
     check('description').isString().withMessage('Invalid Description'),
@@ -261,7 +261,7 @@ router.post('/admin/serviceTypes',
 
 // edit a service type
 
-router.post('/admin/serviceTypes/:serviceId',
+router.patch('/settings/serviceTypes/:serviceId',
   [
     check('name').optional().isString().withMessage('Invalid Name'),
     check('description').optional().isString().withMessage('Invalid Description'),
@@ -283,7 +283,7 @@ router.post('/admin/serviceTypes/:serviceId',
 
 // delete a service type
 
-router.delete('admin/serviceTypes/:serviceId', centerController.deleteServiceType);
+router.delete('/settings/serviceTypes/:serviceId', centerController.deleteServiceType);
 
 // get all clients
 
@@ -389,9 +389,9 @@ router.patch('/onGoingServices/:onGoingServiceId', [
   centerController.updateOnGoingService(req, res, next);
 });
 
-// delete a service type
+// // delete a service type
 
-router.delete('/admin/serviceTypes/:serviceId', centerController.deleteServiceType);
+// router.delete('/admin/serviceTypes/:serviceId', centerController.deleteServiceType);
 
 // get all service records
 

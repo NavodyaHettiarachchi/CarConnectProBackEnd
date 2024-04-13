@@ -129,7 +129,8 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
 exports.getEmployees = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
     SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
-      FROM "${req.body.schema}"."employee" AS et LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id
+      FROM ${req.body.schema}."employee" AS et LEFT JOIN ${req.body.schema}."employee" AS mt ON et.manager_id = mt.id
+      ORDER BY et.id
   `);
 
   return res.status(200).json({
@@ -151,7 +152,7 @@ exports.getEmployees = catchAsync(async (req, res, next) => {
 exports.getEmployee = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
     SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
-    FROM "${req.body.schema}"."employee" AS et LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
+    FROM ${req.body.schema}."employee" AS et LEFT JOIN ${req.body.schema}."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
   `, [req.params.empId]);
 
   if (result.rows.length === 0) {
@@ -214,7 +215,7 @@ exports.addEmployee = catchAsync(async (req, res, next) => {
   }
 
   const result = await pool.query(`
-      INSERT INTO "${req.body.schema}"."employee" (name, username, salt, password, profile_pic, email, contact, dob, nic, gender, manager_id, designation, salary, roles, "isActive")
+      INSERT INTO ${req.body.schema}."employee" (name, username, salt, password, profile_pic, email, contact, dob, nic, gender, manager_id, designation, salary, roles, "isActive")
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING id
     `, [
@@ -237,7 +238,7 @@ exports.addEmployee = catchAsync(async (req, res, next) => {
 
   const result1 = await pool.query(`
   SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
-  FROM "${req.body.schema}"."employee" AS et LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
+  FROM ${req.body.schema}."employee" AS et LEFT JOIN ${req.body.schema}."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
   `, [result.rows[0].id]);
 
   // logging
@@ -262,7 +263,7 @@ exports.addEmployee = catchAsync(async (req, res, next) => {
 
 exports.updateEmployee = catchAsync(async (req, res, next) => { 
   let sql = `
-      UPDATE "${req.body.schema}"."employee" SET
+      UPDATE ${req.body.schema}."employee" SET
     `;
   const dataArr = [];
   let count = 1;
@@ -287,7 +288,7 @@ exports.updateEmployee = catchAsync(async (req, res, next) => {
 
   const result1 = await pool.query(`
   SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
-  FROM "${req.body.schema}"."employee" AS et LEFT JOIN "${req.body.schema}"."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
+  FROM ${req.body.schema}."employee" AS et LEFT JOIN ${req.body.schema}."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
   `, [result.rows[0].id]);
 
   await logController.logProfileChange({id: result1.rows[0].id, username: result1.rows[0].username, type: "Employee of " + req.body.schema, action: "Update", updatedFields: req.body }, res, next);
@@ -309,7 +310,7 @@ exports.updateEmployee = catchAsync(async (req, res, next) => {
 
 exports.deleteEmployee = catchAsync(async (req, res, next) => {
   await pool.query(`
-      DELETE FROM "${req.body.schema}"."employee" WHERE id = $1
+      DELETE FROM "{req.body.schema}."employee" WHERE id = $1
     `, [req.params.empId]);
   
   return res.status(200).json({
@@ -328,7 +329,8 @@ exports.deleteEmployee = catchAsync(async (req, res, next) => {
 exports.getAllRoles = catchAsync(async (req, res, next) => { 
   const result = await pool.query(`
       SELECT id, name, description, privileges 
-      FROM "${req.body.schema}"."roles"
+      FROM ${req.body.schema}."roles"
+      ORDER BY id
     `);
 
   return res.status(200).json({
@@ -349,7 +351,7 @@ exports.getAllRoles = catchAsync(async (req, res, next) => {
 
 exports.getRole = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
-      SELECT * FROM "${req.body.schema}"."roles" WHERE id = $1
+      SELECT * FROM ${req.body.schema}."roles" WHERE id = $1
     `, [req.params.roleId]);
 
   if (result.rows.length === 0) {
@@ -380,7 +382,7 @@ exports.getRole = catchAsync(async (req, res, next) => {
 
 exports.addRole = catchAsync(async (req, res, next) => { 
   const result = await pool.query(`
-        INSERT INTO "${req.body.schema}".roles (name, description, privileges) 
+        INSERT INTO ${req.body.schema}.roles (name, description, privileges) 
         VALUES ($1, $2, $3) RETURNING *
       `, [req.body.name, req.body.description, req.body.privileges]);
 
@@ -401,7 +403,7 @@ exports.addRole = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 exports.updateRole = catchAsync(async (req, res, next) => { 
-  let sql = `UPDATE "${req.body.schema}"."roles" SET `
+  let sql = `UPDATE ${req.body.schema}."roles" SET `
   const dataArr = [];
   let count = 1;
   for (let key in req.body) {
@@ -411,6 +413,7 @@ exports.updateRole = catchAsync(async (req, res, next) => {
       dataArr.push(req.body[key])
     }
   }
+  console.log('sql: ', sql);
   sql = sql.substring(0, sql.length - 2);
   sql = sql.concat(" WHERE id = $", count.toString(), " RETURNING *");
   dataArr.push(req.params.roleId);
@@ -435,7 +438,7 @@ exports.updateRole = catchAsync(async (req, res, next) => {
 
 exports.deleteRole = catchAsync(async (req, res, next) => { 
   await pool.query(`
-      DELETE FROM "${req.body.schema}"."roles" WHERE id = $1
+      DELETE FROM ${req.body.schema}."roles" WHERE id = $1
     `, [req.params.roleId]);
 
   return res.status(200).json({
@@ -573,14 +576,15 @@ exports.deletePart = catchAsync(async (req, res, next) => {
 });
 
 // @ DESCRIPTION      => Get services of a center
-// @ ENDPOINT         => /admin/serviceTypes
+// @ ENDPOINT         => /settings/serviceTypes
 // @ ACCESS           => super admin of center || any employee who has privileges
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/04/09
 
 exports.getServiceTypes = catchAsync(async (req, res, next) => {
+  console.log(req.body.schema);
   const result = await pool.query(`
-    SELECT * FROM "${req.body.schema}"."services";
+    SELECT * FROM ${req.body.schema}."services";
   `);
   return res.status(200).json({
     status: "success",
@@ -593,14 +597,14 @@ exports.getServiceTypes = catchAsync(async (req, res, next) => {
 });
 
 // @ DESCRIPTION      => Get a service of a center
-// @ ENDPOINT         => /admin/serviceTypes/:serviceId
+// @ ENDPOINT         => /settings/serviceTypes/:serviceId
 // @ ACCESS           => super admin of center || any employee who has privileges
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/04/09
 
 exports.getServiceTypeByID = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
-    SELECT * FROM "${req.body.schema}"."services" WHERE id = $1
+    SELECT * FROM ${req.body.schema}."services" WHERE id = $1
   `, [req.params.serviceId]);
 
   console.log(result)
@@ -623,15 +627,15 @@ exports.getServiceTypeByID = catchAsync(async (req, res, next) => {
 });
 
 // @ DESCRIPTION      => Add services of a center
-// @ ENDPOINT         => /admin/serviceTypes
+// @ ENDPOINT         => /settings/serviceTypes
 // @ ACCESS           => super admin of center || any employee who has privileges
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/04/09
 
 exports.addServiceType = catchAsync(async (req, res, next) => { 
   const result = await pool.query(`
-    INSERT INTO "${req.body.schema}"."services" (name, description, cost) 
-    VALUES ($1, $2, $3) RETURNING *
+    INSERT INTO ${req.body.schema}."services" (name, description, cost) 
+    VALUES ($1, $2, $3) 
   `, [req.body.name, req.body.description, req.body.cost]);
 
   return res.status(201).json({
@@ -645,13 +649,13 @@ exports.addServiceType = catchAsync(async (req, res, next) => {
 })
 
 // @ DESCRIPTION      => edit services of a center
-// @ ENDPOINT         => /admin/serviceTypes/:serviceId
+// @ ENDPOINT         => /settings/serviceTypes/:serviceId
 // @ ACCESS           => super admin of center || any employee who has privileges
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/04/09
 
 exports.editServiceType = catchAsync(async (req, res, next) => {
-  let sql = `UPDATE "${req.body.schema}"."services" SET `;
+  let sql = `UPDATE ${req.body.schema}."services" SET `;
   const dataArr = [];
   let count = 1;
   for (let key in req.body) {
@@ -662,7 +666,7 @@ exports.editServiceType = catchAsync(async (req, res, next) => {
     }
   }
   sql = sql.substring(0, sql.length - 2);
-  sql = sql.concat(" WHERE id = $", count.toString(), " RETURNING *");
+  sql = sql.concat(" WHERE id = $", count.toString());
   dataArr.push(req.params.serviceId);
 
   const result = await pool.query(sql, dataArr);
@@ -677,14 +681,14 @@ exports.editServiceType = catchAsync(async (req, res, next) => {
 });
 
 // @ DESCRIPTION      => delete service type of a center
-// @ ENDPOINT         => /admin/serviceTypes/:serviceId
+// @ ENDPOINT         => /settings/serviceTypes/:serviceId
 // @ ACCESS           => super admin of center || any employee who has privileges
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/04/10
 
 exports.deleteServiceType = catchAsync(async (req, res, next) => { 
   await pool.query(`
-    DELETE FROM "${req.body.schema}"."services" WHERE id = $1
+    DELETE FROM ${req.body.schema}."services" WHERE id = $1
   `, [req.params.serviceId]);
 
   return res.status(200).json({
