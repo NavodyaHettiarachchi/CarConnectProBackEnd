@@ -173,7 +173,7 @@ exports.getVehicleHistory = catchAsync(async (req, res, next) => {
       WHERE ct.vehicle_id = $1
     `, [req.params.vehicleId]);
 
-    vehicleHistory = vehicleHistory.concat(rec.rows);
+    vehicleHistory.push(rec.rows);
   });
 
   return res.status(200).json({

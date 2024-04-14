@@ -917,7 +917,7 @@ exports.getOnGoingService = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 exports.addOnGoingService = catchAsync(async (req, res, next) => { 
-  const { client_id, service_date, description, mileage, cost, details, isOngoing, technician_ids } = req.body;
+  const { vehicle_id, client_id, service_date, description, mileage, cost, details, isOngoing, technician_ids } = req.body;
 
   const result = await pool.query(`
     WITH inserted_record AS (
@@ -929,6 +929,31 @@ exports.addOnGoingService = catchAsync(async (req, res, next) => {
     SELECT inserted_record.id, technician_id
     FROM inserted_record, unnest($8::int[]) AS technician_id
 `, [client_id, service_date, description, mileage, cost, details, isOngoing, technician_ids]);
+  
+  const vehicle = await pool.query(`
+    SELECT service_history FROM "carConnectPro"."vehicles"
+    WHERE vehicle_id = $1
+  `, [vehicle_id]);
+
+  let serviceHistory = vehicle.rows[0].service_history;
+  const found = serviceHistory.find(service => service.schema === req.body.schema);
+  if (!found) { 
+    if (serviceHistory) {
+      serviceHistory.push({
+        schema: req.body.schema,
+      });
+    } else {
+      serviceHistory = [{
+        schema: req.body.schema,
+      }];
+    }
+  }
+  
+  await pool.query(`
+    UPDATE "carConnectPro"."vehicles"
+    SET service_history = $1 
+    WHERE vehicle_id = $2
+  `, [JSON.stringify(serviceHistory), vehicle_id]);
   
   return res.status(201).json({
     status: "success",
@@ -947,14 +972,14 @@ exports.addOnGoingService = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 exports.updateOnGoingService = catchAsync(async (req, res, next) => {
-  const { client_id, service_date, description, mileage, cost, details, isOngoing, technician_ids } = req.body;
+  const { vehicle_id, client_id, service_date, description, mileage, cost, details, isOngoing, technician_ids } = req.body;
 
   let sql = `UPDATE "${req.body.schema}"."service_records" SET `;
   const dataArr = [];
   let count = 1;
   for (let key in req.body) {
     console.log("key ", key);
-    if (key !== 'id' && key !== 'schema' && key !== 'technician_ids') {
+    if (key !== 'id' && key !== 'schema' && key !== 'technician_ids' && key !== 'vehicle_id') {
       if (key === 'isOngoing') {
         sql = sql.concat("\"",(key).toString(), "\" = $", count.toString(), ", ");
       } else { 
@@ -996,6 +1021,32 @@ exports.updateOnGoingService = catchAsync(async (req, res, next) => {
       updatedRes.techs = updatedTechs.rows;
     }
   }
+
+  const vehicle = await pool.query(`
+    SELECT service_history FROM "carConnectPro"."vehicles"
+    WHERE vehicle_id = $1
+  `, [vehicle_id]);
+
+  let serviceHistory = vehicle.rows[0].service_history;
+  const found = serviceHistory.find(service => service.schema === req.body.schema);
+  if (!found) {
+    if (serviceHistory) {
+      serviceHistory.push({
+        schema: req.body.schema,
+      });
+    } else {
+      serviceHistory = [{
+        schema: req.body.schema,
+      }];
+    }
+  }
+
+  await pool.query(`
+    UPDATE "carConnectPro"."vehicles"
+    SET service_history = $1 
+    WHERE vehicle_id = $2
+  `, [JSON.stringify(serviceHistory), vehicle_id]);
+
 
   return res.status(201).json({
     status: "success",
