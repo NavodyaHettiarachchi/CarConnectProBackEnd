@@ -101,9 +101,12 @@ exports.login = async (req, res, next) => {
       // login logs
       await logController.logLoginRegister({ id: userData.id, type: "Vehicle Owner", username: userData.username, action: "login" }, res, next);
     } else {
-      table = "employee";
       const result = await pool.query(`
-        SELECT * FROM ${schema}.${table} WHERE username = $1 
+        SELECT et.id, et.username, et.password, et.salt, rt.privileges AS roles
+        FROM ${schema}."employee" AS et
+        INNER JOIN ${schema}."roles" AS rt
+        ON et.roles = rt.id
+        WHERE username = $1 
       `, [username]);
 
       // validate password
@@ -111,7 +114,6 @@ exports.login = async (req, res, next) => {
         return res.status(401).json({ error: 'Invalid username or password' });
       }
       userData = result.rows[0];
-      userData.schema = schema;
       // logging of login
       await logController.logLoginRegister({ id: userData.id, type: schema + " employee", username: userData.username, action: "login" }, res, next);
     }
