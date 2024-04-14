@@ -955,7 +955,11 @@ exports.updateOnGoingService = catchAsync(async (req, res, next) => {
   for (let key in req.body) {
     console.log("key ", key);
     if (key !== 'id' && key !== 'schema' && key !== 'technician_ids') {
-      sql = sql.concat((key).toString(), " = $", count.toString(), ", ");
+      if (key === 'isOngoing') {
+        sql = sql.concat("\"",(key).toString(), "\" = $", count.toString(), ", ");
+      } else { 
+        sql = sql.concat((key).toString(), " = $", count.toString(), ", ");
+      }
       count++;
       dataArr.push(req.body[key]);
     }
