@@ -852,7 +852,7 @@ exports.getOnGoingServices = catchAsync(async (req, res, next) => {
       sr."isOngoing" = $1
     GROUP BY
       sr.id, sr.client_id, sr.service_date, sr.description, sr.mileage, sr.cost
-  `, [false]);
+  `, [true]);
 
   return res.status(200).json({
     status: "success",

@@ -15,4 +15,8 @@ router.get('/fuelType', parameterController.getFuelType);
 
 router.get('/transmissionType', parameterController.getTransmissionType);
 
+// center type
+
+router.get('/centers', parameterController.getCenters);
+
 module.exports = router;
