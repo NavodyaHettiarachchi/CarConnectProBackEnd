@@ -43,3 +43,18 @@ exports.getTransmissionType = catchAsync(async (req, res, next) => {
     }
   });
 });
+
+exports.getCenters = catchAsync(async (req, res, next) => {
+  const result = await pool.query(`
+    SELECT center_id, name, street_1, street_2, city, province, phone, email, center_type FROM "carConnectPro"."center"
+  `);
+
+  return res.status(200).json({
+    status: "success",
+    showQuickNotification: false,
+    message: "Retrieved all centers",
+    data: {
+      centers: result.rows
+    }
+  })
+});

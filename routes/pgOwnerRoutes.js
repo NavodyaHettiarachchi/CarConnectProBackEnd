@@ -50,4 +50,7 @@ router.post('/vehicles/:vehicleId', ownerController.getVehicle);
 // Get Vehicle history
 router.post('/vehicles/:vehicleId/history', ownerController.getVehicleHistory);
 
+// Get filtered vehicle history 
+router.post('/vehicles/:vehicleId/filter', ownerController.getFilteredHistory);
+
 module.exports = router;
