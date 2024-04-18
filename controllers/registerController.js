@@ -232,8 +232,10 @@ async function createSchemaAndTables(schemaName, next) {
       cost NUMERIC(12,2) NOT NULL
     )`)
 
+    await client.query('COMMIT');
   } catch (error) {
     console.error('Error creating schema and tables:', error.message);
+    await client.query('ROLLBACK');
     return next(
       new AppError('Failed to create schema and tables.', 500)
     )
@@ -308,7 +310,7 @@ exports.register = catchAsync(async (req, res, next) => {
       case 'S':
         
         schemaName = `service_${name.toLowerCase().replace(/\s+/g, '_')}`;
-        break
+        break;
       case 'R':
         
         schemaName = `repair_${name.toLowerCase().replace(/\s+/g, '_')}`;
@@ -322,7 +324,7 @@ exports.register = catchAsync(async (req, res, next) => {
     }
 
     let centerData = {
-      centerType: center_type,
+      center_type,
       username,
       salt,
       pwdhash,
@@ -335,6 +337,8 @@ exports.register = catchAsync(async (req, res, next) => {
       email,
       schemaName,
     }
+
+  try {
     const result = await registerServiceOrRepairCenter(centerData, res, next);
 
     // adding username and schema to schema_mapping
@@ -347,5 +351,8 @@ exports.register = catchAsync(async (req, res, next) => {
         user: result.rows[0],
       }
     });
+  } catch (error){
+    return next(error);
   }
+} 
 });
