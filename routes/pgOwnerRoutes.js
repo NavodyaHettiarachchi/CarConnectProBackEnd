@@ -3,6 +3,10 @@ const { check, validationResult } = require('express-validator');
 const ownerController = require('../controllers/ownerController');
 
 const router = express.Router();
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
 
 // Get all owners for sy admin
 router.get('/', async (req, res) => {
@@ -42,6 +46,15 @@ router.patch('/profile/:userId', [
 // Get owner vehicles
 
 router.post('/vehicles', ownerController.getVehicles);
+
+// Add owner vehicle
+
+router.post('/vehicle', upload.fields([
+  { name: 'photo_1', maxCount: 1 },
+  { name: 'photo_2', maxCount: 1 },
+  { name: 'photo_3', maxCount: 1 },
+  { name: 'document', maxCount: 1 }
+]) ,ownerController.addVehicle);
 
 // Get owner vehicle data
 

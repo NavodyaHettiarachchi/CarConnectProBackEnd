@@ -95,7 +95,7 @@ async function registerVehicleOwner(ownerData, res, next) {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/23
 
-async function registerServiceOrRepairCenter(centerData, res, data) {
+async function registerServiceOrRepairCenter(centerData, res, next) {
   // Creating schema and tables for the center
   await createSchemaAndTables(centerData.schemaName);
 
@@ -193,7 +193,7 @@ async function createSchemaAndTables(schemaName) {
       designation TEXT NOT NULL,
       salary NUMERIC(10,2) NOT NULL,
       roles INTEGER REFERENCES ${schemaName}.roles(id),
-      isActive BOOLEAN NOT NULL
+      \"isActive\" BOOLEAN NOT NULL
     )`);
 
     // client table
@@ -214,7 +214,7 @@ async function createSchemaAndTables(schemaName) {
       mileage NUMERIC(8,1) NOT NULL,
       cost NUMERIC(12,2) NOT NULL,
       details JSON,
-      isOngoing BOOLEAN NOT NULL DEFAULT TRUE
+      \"isOngoing\" BOOLEAN NOT NULL DEFAULT TRUE
     )`);
 
     // service technician table
@@ -322,7 +322,7 @@ exports.register = catchAsync(async (req, res, next) => {
     }
 
     let centerData = {
-      center_type,
+      centerType: center_type,
       username,
       salt,
       pwdhash,
