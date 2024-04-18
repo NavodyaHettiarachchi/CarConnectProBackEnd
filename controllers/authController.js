@@ -72,6 +72,7 @@ exports.login = async (req, res, next) => {
       WHERE username = $1
     `, [username]);
 
+
   if (checkIfCenterSuperAdmin.rows.length > 0) {
     if (!comFunc.validatePassword(password, checkIfCenterSuperAdmin.rows[0].salt, checkIfCenterSuperAdmin.rows[0].password)) {
       return res.status(401).json({ error: 'Invalid username or password' });
@@ -92,7 +93,6 @@ exports.login = async (req, res, next) => {
       const result = await pool.query(`
           SELECT * FROM "carConnectPro".${table} WHERE username = $1
         `, [username]);
-
       // validate password
       if (!comFunc.validatePassword(password, result.rows[0].salt, result.rows[0].password)) {
         return res.status(401).json({ error: 'Invalid username or password' });

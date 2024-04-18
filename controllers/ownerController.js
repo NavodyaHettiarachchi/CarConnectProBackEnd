@@ -81,6 +81,78 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
   });
 });
 
+// @ DESCRIPTION      => Add owner Vehicle
+// @ ENDPOINT         => /vehicles
+// @ ACCESS           => Vehicle Owner
+// @ CREATED BY       => Navodya Hettiarachchi
+// @ CREATED DATE     => 2024/04/19
+
+exports.addVehicle = catchAsync(async (req, res, next) => { 
+
+  const {
+    number_plate,
+    model,
+    make,
+    engine_no,
+    chassis_no,
+    transmission_type,
+    fuel_type,
+    seating_capacity,
+    mileage
+  } = req.body;
+
+  const files = req.files;
+
+  let dataArr = [
+    number_plate,
+    model,
+    make,
+    engine_no,
+    chassis_no,
+    transmission_type,
+    fuel_type,
+    seating_capacity,
+    mileage
+  ];
+  let count = 10;
+  let valuesStr = `VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9`;
+  let sql = `
+    INSERT INTO "carConnectPro"."vehicle" (
+      number_plate, model, make, engine_no, chassis_no, transmission_type, fuel_type, seating_capacity, mileage
+  `
+  Object.keys(files).forEach((key) => {
+    if (files[key] !== null) {
+      sql = sql.concat(', ' + key.toString());
+      dataArr.push(files[key][0].buffer);
+      valuesStr = valuesStr.concat(", " + count.toString());
+      count++;
+    }
+  });
+  sql = sql.concat(') ' + valuesStr +') RETURNING *');
+
+  const result = await pool.query(`
+      ${sql}
+  `, dataArr);
+
+  const vehicle_id = result.rows[0].vehicle_id;
+
+  const result1 = await pool.query(`
+    INSERT INTO "carConnectPro"."owner_vehicle" (owner_id, vehicle_id, reg_year)
+    VALUES ($1, $2, $3);
+  `, [req.body.owner_id, vehicle_id, req.body.reg_year]);
+
+  return res.status(201).json({
+    status: "success",
+    showQuickNotification: true,
+    message: "Vehicle added successfully",
+    data: {
+      vehicle: result.rows[0]
+    }
+  })
+
+});
+
+
 // @ DESCRIPTION      => Get all owner Vehicles
 // @ ENDPOINT         => /vehicles
 // @ ACCESS           => Vehicle Owner

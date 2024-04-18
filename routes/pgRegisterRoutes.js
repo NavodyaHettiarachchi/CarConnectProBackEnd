@@ -16,9 +16,10 @@ router.post('/',
     check('phone').isString().trim().isLength({ min: 10, max: 10 }).withMessage('Invalid phone number'),
     check('email').trim().isEmail().withMessage('Invalid Email'),
     // conditional validation .isISO8601().toDate().withMessage('Invalid date of birth'),
-    check('gender').optional().isIn(['M', 'F', 'O', null ]).withMessage('Invalid gender'),
+    check('gender').optional().isIn(['M', 'F', 'O', null]).withMessage('Invalid gender'),
     check('dob').optional().isISO8601().toDate().withMessage('Invalid date of birth'),
     check('center_type').optional().isIn(['S', 'R', 'B', null]).withMessage('Invalid center type'),
+    check('nic').optional().isInt().withMessage('Invalid nic')
   ], async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
