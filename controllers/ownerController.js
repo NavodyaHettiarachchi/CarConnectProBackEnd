@@ -137,17 +137,19 @@ exports.addVehicle = catchAsync(async (req, res, next) => {
   let count = 10;
   let valuesStr = `VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9`;
   let sql = `
-    INSERT INTO "carConnectPro"."vehicle" (
+    INSERT INTO "carConnectPro"."vehicles" (
       number_plate, model, make, engine_no, chassis_no, transmission_type, fuel_type, seating_capacity, mileage
   `
-  Object.keys(files).forEach((key) => {
-    if (files[key] !== null) {
-      sql = sql.concat(', ' + key.toString());
-      dataArr.push(files[key][0].buffer);
-      valuesStr = valuesStr.concat(", " + count.toString());
-      count++;
-    }
-  });
+  if (files) { 
+    Object.keys(files).forEach((key) => {
+      if (files[key] !== null) {
+        sql = sql.concat(', ' + key.toString());
+        dataArr.push(files[key][0].buffer);
+        valuesStr = valuesStr.concat(", " + count.toString());
+        count++;
+      }
+    });
+  }
   sql = sql.concat(') ' + valuesStr +') RETURNING *');
 
   const result = await pool.query(`
