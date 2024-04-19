@@ -22,31 +22,52 @@ router.get("/", async (req, res) => {
   }
 });
 
-
 // get profile of center
-router.get('/profile/:id', centerController.getProfile);
+router.get("/profile/:id", centerController.getProfile);
 
 // update profile information of center
 
-router.patch('/profile/:userId', [
-  check('name').optional().trim().notEmpty().withMessage('Name is required'),
-  check('street_1').optional().trim().notEmpty().withMessage('Invalid Address'),
-  check('street_2').optional().trim().notEmpty().withMessage('Invalid Address'),
-  check('city').optional().trim().isString().withMessage('Invalid City Name'),
-  check('province').optional().trim().isString().withMessage('Invalid Province'),
-  check('phone').optional().isString().trim().isLength({ min: 10, max: 10 }).withMessage('Invalid phone number'),
-], async (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      status: "failed",
-      showQuickNotification: true,
-      message: "Invalid inputs",
-      error: errors.array(),
-    });
+router.patch(
+  "/profile/:userId",
+  [
+    check("name").optional().trim().notEmpty().withMessage("Name is required"),
+    check("street_1")
+      .optional()
+      .trim()
+      .notEmpty()
+      .withMessage("Invalid Address"),
+    check("street_2")
+      .optional()
+      .trim()
+      .notEmpty()
+      .withMessage("Invalid Address"),
+    check("city").optional().trim().isString().withMessage("Invalid City Name"),
+    check("province")
+      .optional()
+      .trim()
+      .isString()
+      .withMessage("Invalid Province"),
+    check("phone")
+      .optional()
+      .isString()
+      .trim()
+      .isLength({ min: 10, max: 10 })
+      .withMessage("Invalid phone number"),
+  ],
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        status: "failed",
+        showQuickNotification: true,
+        message: "Invalid inputs",
+        error: errors.array(),
+      });
+    }
+    centerController.updateProfile(req, res, next);
+    ext(error);
   }
-    centerController.updateProfile(req, res, next);ext(error);
-});
+);
 
 // get all employees
 
@@ -54,7 +75,7 @@ router.post("/getemployee", centerController.getEmployees);
 
 // get an employee of a center
 
-router.get('/employee/:empId', centerController.getEmployee);
+router.get("/employee/:empId", centerController.getEmployee);
 
 // add an employee to a canter
 
@@ -264,7 +285,7 @@ router.post("/inventory/:partId", centerController.getPart);
 
 // add a part
 router.post(
-  "/inventory",
+  "/addInventory",
   [
     check("name").isString().withMessage("Invalid Name"),
     check("description").isString().withMessage("Invalid Description"),
@@ -405,7 +426,7 @@ router.post(
   [
     check("vehicle_id").isInt().notEmpty().withMessage("Vehicle Id is invalid"),
     check("date_of_reg").isISO8601().withMessage("Invalid date"),
-    check("mileage_on_reg").isFloat().withMessage("Invalid mileage"),
+    check("mileage").isFloat().withMessage("Invalid mileage"),
     check("owner_id").isInt().withMessage("Invalid owner id"),
   ],
   async (req, res, next) => {
