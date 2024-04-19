@@ -35,10 +35,14 @@ router.patch('/profile/:userId', [
   check('city').optional().trim().isString().withMessage('Invalid City Name'),
   check('province').optional().trim().isString().withMessage('Invalid Province'),
   check('phone').isString().trim().isLength({ min: 10, max: 10 }).withMessage('Invalid phone number'),
- ] , async (req, res) => { 
+ ] , async (req, res,next) => { 
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    return res.status(400).json({ 
+      status: "failed",
+      showQuickNotification: true,
+      message: "Invalid inputs",
+      errors: errors.array() });
   }
   ownerController.updateProfile(req, res, next);
 })

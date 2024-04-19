@@ -22,7 +22,8 @@ const signToken = (id) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/23
 
-const createSendToken = (user, schema, statusCode, req, res) => {
+const createSendToken = (user, schema, table, statusCode, req, res) => {
+
   const token = signToken(user.id);
 
   const cookieOptions = {
@@ -35,6 +36,20 @@ const createSendToken = (user, schema, statusCode, req, res) => {
 
   res.cookie('jwt', token, cookieOptions);
 
+  //ADD HERE ROLETYPE @HARINDU ASHEN
+
+  let roleType;
+
+  if (table === 'owner') {
+    roleType = 'owner';
+  } else if (table === 'center') {
+    roleType = 'center';
+  } else if (table === 'employee') {
+    roleType = 'employee';
+  } else { 
+    roleType = 'admin';
+  }
+
   res.status(statusCode).json({
     token,
     status: "sucess",
@@ -42,6 +57,7 @@ const createSendToken = (user, schema, statusCode, req, res) => {
     data: {
       user,
       schema,
+      roleType,
     },
   });
 };
@@ -67,6 +83,10 @@ exports.login = async (req, res, next) => {
   }
   let userData;
   let schema = findSchema.rows[0].schema;
+  let table;
+
+
+
   const checkIfCenterSuperAdmin = await pool.query(`
       SELECT * FROM "carConnectPro"."center" 
       WHERE username = $1
@@ -74,20 +94,25 @@ exports.login = async (req, res, next) => {
 
 
   if (checkIfCenterSuperAdmin.rows.length > 0) {
+
     if (!comFunc.validatePassword(password, checkIfCenterSuperAdmin.rows[0].salt, checkIfCenterSuperAdmin.rows[0].password)) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
-    userData = checkIfCenterSuperAdmin.rows[0];
+
+    let userData = checkIfCenterSuperAdmin.rows[0];
+    userData.id = userData.center_id;
     // login logs
     await logController.logLoginRegister({ id: userData.id, type: schema, username: userData.username, action: 'login' }, res, next);
+    console.log("Center user ID:", userData.id);
     delete userData.password;
     delete userData.salt;
+    table = "center";
+    createSendToken(userData, schema, table, 200, req, res);
+  }
 
-    userData.schema = schema;
-    createSendToken(userData, schema, 200, req, res);
-  } else {
+  else {
+    let userData;
 
-    let table = "";
     if (schema == "carConnectPro") {
       table = "owner";
       const result = await pool.query(`
@@ -100,7 +125,9 @@ exports.login = async (req, res, next) => {
       userData = result.rows[0];
       // login logs
       await logController.logLoginRegister({ id: userData.id, type: "Vehicle Owner", username: userData.username, action: "login" }, res, next);
-    } else {
+    }
+    else {
+      table = "employee";
       const result = await pool.query(`
         SELECT et.id, et.username, et.password, et.salt, rt.privileges AS roles
         FROM ${schema}."employee" AS et
@@ -114,6 +141,7 @@ exports.login = async (req, res, next) => {
         return res.status(401).json({ error: 'Invalid username or password' });
       }
       userData = result.rows[0];
+      userData.schema = schema;
       // logging of login
       await logController.logLoginRegister({ id: userData.id, type: schema + " employee", username: userData.username, action: "login" }, res, next);
     }
@@ -121,6 +149,7 @@ exports.login = async (req, res, next) => {
     // If user is found and password is correct
     delete userData.password;
     delete userData.salt;
-    createSendToken(userData, schema, 200, req, res);
+    createSendToken(userData, schema, table, 200, req, res);
   }
+
 };

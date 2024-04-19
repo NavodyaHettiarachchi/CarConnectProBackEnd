@@ -12,7 +12,7 @@ exports.getProfile = catchAsync(async (req, res, next) => {
   const uId = req.params.userId;
   const result = await pool.query(`
     SELECT id, username, name, gender, dob, nic, street_1, street_2, city, province, email, phone, profile_pic, roles
-    FROM person 
+    FROM "carConnectPro"."owner" 
     WHERE id = $1
   `, [uId]);
 
@@ -40,26 +40,34 @@ exports.getProfile = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/26
 
-exports.updateProfile = catchAsync(async (req, res, next) => {
+exports.updateProfile = catchAsync(async (req, res) => { 
+  const userId=req.params.userId;//@Harindu
+  const { name, phone ,dob,gender , nic, city, province} = req.body;
+
   let sql = `
-      UPDATE "carConnectPro"."owner"
-      Set
-    `;
-  let dataArr = [];
-  let count = 1;
-  for (let key in req.body) {
-    if (key !== id) {
-      sql = sql.concat((key).toString(), " = $", count.toString(), ", ");
-      count++;
-      dataArr.push(req.body[key]);
-    }
-  }
+    UPDATE "carConnectPro"."owner"
+    SET  name = $1, phone= $2 ,dob= $3,gender= $4 , nic= $5, city= $6, province= $7
+    WHERE id = $8
+    RETURNING id, username, name, email, phone ,dob,gender , nic, city, province`;
 
-  sql = sql.substring(0, sql.length - 2);
-  sq = sql.concat(" WHERE id = $", count.toString(), " RETURNING id, username, name, gender, dob, nic, street_1, street_2, city, province, email, phone, profile_pic, roles");
-  dataArr.push(req.params.userId);
+  // Set the values to be used in the SQL query
+  const values = [name,phone,dob,gender , nic, city, province,userId];
 
-  const result = await pool.query(sql, dataArr);
+  // let count = 1;
+  // for (let key in req.body) {
+  //   if (key !== userId) {
+  //     sql = sql.concat((key).toString(), " = $", count.toString(), ", ");
+  //     count++;
+  //     dataArr.push(req.body[key]);
+  //   }
+  // }
+
+
+  // sql = sql.substring(0, sql.length - 2);
+  // sq = sql.concat(" WHERE id = $", count.toString(), " RETURNING id, username, name, gender, dob, nic, street_1, street_2, city, province, email, phone, profile_pic, roles");
+  // dataArr.push(req.params.userId);
+try{
+  const result = await pool.query(sql,values);
 
   // logging
   let logObj = {
@@ -69,6 +77,7 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
     action: "Update",
     updatedFields: req.body
   }
+
   await logController.logProfileChange(logObj, res, next);
 
   return res.status(200).json({
@@ -79,7 +88,18 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
       userData: result.rows[0]
     }
   });
-});
+}catch (error) {
+    return res.status(500).json({
+      status: "error",
+      showQuickNotification: true,
+      message: "An error occurred while updating profile.",
+      error: error.message
+    });
+  }
+}
+
+);
+
 
 // @ DESCRIPTION      => Add owner Vehicle
 // @ ENDPOINT         => /vehicles

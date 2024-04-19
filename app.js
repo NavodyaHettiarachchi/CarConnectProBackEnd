@@ -12,7 +12,8 @@ const registerRoutes = require('./routes/pgRegisterRoutes');
 const centerRoutes = require('./routes/pgCenterRoutes');
 const ownerRoutes = require('./routes/pgOwnerRoutes');
 const parameterRoutes = require('./routes/pgParameterRoutes');
-const commonRoutes = require('./routes/pgCommonRoutes')
+const commonRoutes = require('./routes/pgCommonRoutes');
+const changePasswordRoutes=require('./routes/pgChangePasswordRoutes')
 
 app.get('/', (req, res) => {
   res.status(200).send("Hello from server side");
@@ -44,6 +45,7 @@ app.use('/center', centerRoutes);
 app.use('/owner', ownerRoutes);
 app.use('/parameter', parameterRoutes);
 app.use('/common', commonRoutes);
+app.use('/password',changePasswordRoutes);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404))

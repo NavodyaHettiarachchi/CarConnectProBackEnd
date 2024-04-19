@@ -71,10 +71,11 @@ exports.getProfile = catchAsync(async (req, res, next) => {
     `
     SELECT center_id, center_type, username, name, email, phone, street_1, street_2, city, province, roles
     FROM "carConnectPro"."center" 
-    WHERE center_id = $1 AND center_type in ($2, $3)
-  `,
-    [centerId, "S", "B"]
-  );
+    WHERE center_id = $1 AND center_type in ($2, $3,$4)
+  `, [centerId, "S","R","B",]);
+
+  // console.log('Request received for center ID:', centerId);
+  // console.log('Query result:', result);
 
   if (result.rows.length === 0) {
     return res.status(404).json({
@@ -102,32 +103,61 @@ exports.getProfile = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 exports.updateProfile = catchAsync(async (req, res, next) => {
-  let sql = `
-      UPDATE "carConnectPro"."center"
-      SET 
-    `;
-  const dataArr = [];
-  let count = 1;
-  for (let key in req.body) {
-    if (key !== "id") {
-      sql = sql.concat(key.toString(), " = $", count.toString(), ", ");
-      count++;
-      dataArr.push(req.body[key]);
-    }
-  }
-  sql = sql.substring(0, sql.length - 2);
-  sql = sql.concat(" WHERE id = $", count.toString(), " RETURNING *");
-  dataArr.push(req.body.id);
+  const userId = req.params.userId; // @Harindu
+  const { name, phone, center_type, street_1, street_2, city, province } = req.body;
 
-  const result = await pool.query(sql, dataArr);
-  const updateCenter = new profileChangeLogs({
-    id: req.params.id,
-    username: result.rows[0].username,
-    action: "Update Service Center",
-    updatedFields: req.body,
-  });
-  await updateCenter.save();
-  res.status(200).json(result.rows[0]);
+  console.log('Received request to update profile:', req.body);
+
+  let sql = `
+  UPDATE "carConnectPro"."center"
+  SET name = $1, phone = $2, center_type = $3, street_1 = $4, street_2 = $5, city = $6, province = $7
+  WHERE center_id = $8 
+  RETURNING center_id, username, name, email, phone, center_type, street_1, street_2, city, province;
+  `;
+
+  const values = [name, phone, center_type, street_1, street_2, city, province, userId];
+
+  // console.log('SQL query:', sql);
+  // console.log('SQL values:', values);
+
+  try {
+    const result = await pool.query(sql, values);
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        status: "failed",
+        message: "User not found or no changes made to the profile."
+      });
+    }
+
+    // Logging the profile change
+    const logObj = {
+      id: req.params.userId,
+      username: result.rows[0].username,
+      type: "Center",
+      action: "Update",
+      updatedFields: req.body
+    };
+
+    await logController.logProfileChange(logObj, res, next);
+    
+    return res.status(200).json({
+      status: "success",
+      showQuickNotification: true,
+      message: "Profile updated successfully.",
+      data: {
+        userData: result.rows[0]
+      }
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    return res.status(500).json({
+      status: "error",
+      showQuickNotification: true,
+      message: "An error occurred while updating profile.",
+      error: error.message
+    });
+  }
 });
 
 // @ DESCRIPTION      => Get all employees of center
