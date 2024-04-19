@@ -22,7 +22,7 @@ const signToken = (id) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/23
 
-const createSendToken = (user, schema,table, statusCode, req, res) => {
+const createSendToken = (user, schema, table, statusCode, req, res) => {
 
   const token = signToken(user.id);
 
@@ -35,34 +35,21 @@ const createSendToken = (user, schema,table, statusCode, req, res) => {
   // if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
 
   res.cookie('jwt', token, cookieOptions);
-  
-   //ADD HERE ROLETYPE @HARINDU ASHEN
 
-   let roleType;
-   let userID=user.id;
-   
-   if (schema === "carConnectPro"){
+  //ADD HERE ROLETYPE @HARINDU ASHEN
 
-      if(table === 'owner'){
+  let roleType;
 
-          roleType = 'owner';
-        
-      }
+  if (table === 'owner') {
+    roleType = 'owner';
+  } else if (table === 'center') {
+    roleType = 'center';
+  } else if (table === 'employee') {
+    roleType = 'employee';
+  } else { 
+    roleType = 'admin';
+  }
 
-      } else if(table==="center"){
-        
-          roleType="center";
-         
-
-      }else if(schema === 'service_pqr_service_center' && table === 'employee'){
-
-          roleType = 'employee';
-
-      } else {
-          roleType = 'admin';
-    }
-
- //console.log("userID before response:", userID);
   res.status(statusCode).json({
     token,
     status: "sucess",
@@ -71,7 +58,6 @@ const createSendToken = (user, schema,table, statusCode, req, res) => {
       user,
       schema,
       roleType,
-      userID,
     },
   });
 };
@@ -99,7 +85,7 @@ exports.login = async (req, res, next) => {
   let schema = findSchema.rows[0].schema;
   let table;
 
-  
+
 
   const checkIfCenterSuperAdmin = await pool.query(`
       SELECT * FROM "carConnectPro"."center" 
@@ -108,7 +94,7 @@ exports.login = async (req, res, next) => {
 
 
   if (checkIfCenterSuperAdmin.rows.length > 0) {
-  
+
     if (!comFunc.validatePassword(password, checkIfCenterSuperAdmin.rows[0].salt, checkIfCenterSuperAdmin.rows[0].password)) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
@@ -121,8 +107,8 @@ exports.login = async (req, res, next) => {
     delete userData.password;
     delete userData.salt;
     table = "center";
-    createSendToken(userData,schema,table, 200, req, res);
-   } 
+    createSendToken(userData, schema, table, 200, req, res);
+  }
 
   else {
     let userData;
@@ -139,8 +125,8 @@ exports.login = async (req, res, next) => {
       userData = result.rows[0];
       // login logs
       await logController.logLoginRegister({ id: userData.id, type: "Vehicle Owner", username: userData.username, action: "login" }, res, next);
-     } 
-      else {
+    }
+    else {
       table = "employee";
       const result = await pool.query(`
         SELECT et.id, et.username, et.password, et.salt, rt.privileges AS roles
@@ -150,20 +136,20 @@ exports.login = async (req, res, next) => {
         WHERE username = $1 
       `, [username]);
 
-        // validate password
-        if (!comFunc.validatePassword(password, result.rows[0].salt, result.rows[0].password)) {
-          return res.status(401).json({ error: 'Invalid username or password' });
-        }
-        userData = result.rows[0];
-        userData.schema = schema;
-        // logging of login
-        await logController.logLoginRegister({ id: userData.id, type: schema + " employee", username: userData.username, action: "login" }, res, next);
+      // validate password
+      if (!comFunc.validatePassword(password, result.rows[0].salt, result.rows[0].password)) {
+        return res.status(401).json({ error: 'Invalid username or password' });
+      }
+      userData = result.rows[0];
+      userData.schema = schema;
+      // logging of login
+      await logController.logLoginRegister({ id: userData.id, type: schema + " employee", username: userData.username, action: "login" }, res, next);
     }
 
     // If user is found and password is correct
     delete userData.password;
     delete userData.salt;
-    createSendToken(userData,schema,table, 200, req, res);
+    createSendToken(userData, schema, table, 200, req, res);
   }
 
 };

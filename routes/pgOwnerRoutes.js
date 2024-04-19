@@ -44,12 +44,7 @@ router.patch('/profile/:userId', [
       message: "Invalid inputs",
       errors: errors.array() });
   }
-  try{
-  ownerController.updateProfile(req, res);
-  }
-  catch(error){
-    next(error);
-  }
+  ownerController.updateProfile(req, res, next);
 })
 
 // Get owner vehicles

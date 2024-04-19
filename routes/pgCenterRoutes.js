@@ -45,12 +45,7 @@ router.patch('/profile/:userId', [
       error: errors.array(),
     });
   }
-  try{
-    centerController.updateProfile(req, res, next);
-  }
-  catch(error){
-    next(error);
-  }
+    centerController.updateProfile(req, res, next);ext(error);
 });
 
 // get all employees

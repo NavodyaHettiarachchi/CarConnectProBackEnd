@@ -7,7 +7,7 @@ const AppError = require('../utils/appError');
 
 
 // Function to retrieve current password
-exports.getCurrentPassword = async (req, res, next) => {
+exports.getCurrentPassword = catchAsync(async (req, res, next) => {
   const { userType, id } = req.params;
   const { prevPassword } = req.body; // Get the provided password from request body
 
@@ -71,7 +71,7 @@ exports.getCurrentPassword = async (req, res, next) => {
       console.error('Error during password verification:', error);
       return res.status(500).json({ error: 'Internal server error' });
   }
-};
+});
 
 
 
@@ -87,7 +87,7 @@ function hashPassword(password, salt) {
 }
 
 // Function to save new password
-exports.saveNewPassword = async (req, res, next) => {
+exports.saveNewPassword = catchAsync(async (req, res, next) => {
   const { userType, id } = req.params;
   const { newPassword } = req.body;
 
@@ -137,4 +137,4 @@ exports.saveNewPassword = async (req, res, next) => {
       console.error('Error saving new password:', error);
       return res.status(500).json({ error: 'Internal server error' });
   }
-};
+});
