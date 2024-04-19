@@ -97,7 +97,7 @@ async function registerVehicleOwner(ownerData, res, next) {
 
 async function registerServiceOrRepairCenter(centerData, res, next) {
   // Creating schema and tables for the center
-  await createSchemaAndTables(centerData.schemaName);
+  await createSchemaAndTables(centerData.schemaName, next);
 
   const result = await pool.query(`
     INSERT INTO "carConnectPro".center (center_type, username, salt, password, name, street_1, street_2, city, province, phone, email, roles)
@@ -105,7 +105,7 @@ async function registerServiceOrRepairCenter(centerData, res, next) {
     RETURNING center_type, username, name, street_1, street_2, city, province, phone, email, roles
   `,
     [
-      centerData.centerType,
+      centerData.center_type,
       centerData.username,
       centerData.salt,
       centerData.pwdhash,
@@ -122,7 +122,7 @@ async function registerServiceOrRepairCenter(centerData, res, next) {
 
   // logging  
   let type = '';
-  switch (centerData.centerType) {
+  switch (centerData.center_type) {
     case 'S':
       type = 'Service';
       break;
@@ -148,12 +148,12 @@ async function registerServiceOrRepairCenter(centerData, res, next) {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/23
 
-async function createSchemaAndTables(schemaName) {
+async function createSchemaAndTables(schemaName, next) {
   const client = await pool.connect();
   try {
 
     // Create schema
-    await client.query(`CREATE SCHEMA ${schemaName}`);
+    await client.query(`CREATE SCHEMA IF NOT EXISTS ${schemaName}`);
 
     // creating inventory tables
     await client.query(`CREATE TABLE ${schemaName}.part (
@@ -232,8 +232,10 @@ async function createSchemaAndTables(schemaName) {
       cost NUMERIC(12,2) NOT NULL
     )`)
 
+    await client.query('COMMIT');
   } catch (error) {
     console.error('Error creating schema and tables:', error.message);
+    await client.query('ROLLBACK');
     return next(
       new AppError('Failed to create schema and tables.', 500)
     )
@@ -308,7 +310,7 @@ exports.register = catchAsync(async (req, res, next) => {
       case 'S':
         
         schemaName = `service_${name.toLowerCase().replace(/\s+/g, '_')}`;
-        break
+        break;
       case 'R':
         
         schemaName = `repair_${name.toLowerCase().replace(/\s+/g, '_')}`;
@@ -322,7 +324,7 @@ exports.register = catchAsync(async (req, res, next) => {
     }
 
     let centerData = {
-      centerType: center_type,
+      center_type,
       username,
       salt,
       pwdhash,
@@ -335,6 +337,8 @@ exports.register = catchAsync(async (req, res, next) => {
       email,
       schemaName,
     }
+
+  try {
     const result = await registerServiceOrRepairCenter(centerData, res, next);
 
     // adding username and schema to schema_mapping
@@ -342,10 +346,13 @@ exports.register = catchAsync(async (req, res, next) => {
     res.status(201).json({
       status: "success",
       showQuickNotification: true,
-      message: "User Registration Successful...",
+      message: "Center Registration Successful...",
       data: {
         user: result.rows[0],
       }
     });
+  } catch (error){
+    return next(error);
   }
+} 
 });
