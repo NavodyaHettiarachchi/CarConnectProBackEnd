@@ -21,13 +21,13 @@ router.get('/', async (req, res) => {
   }
 });
 
-// get profile of center
 
-router.post('/profile/:id', centerController.getProfile);
+// get profile of center
+router.get('/profile/:id', centerController.getProfile);
 
 // update profile information of center
 
-router.patch('profile/:id', [
+router.patch('/profile/:userId', [
   check('name').optional().trim().notEmpty().withMessage('Name is required'),
   check('street_1').optional().trim().notEmpty().withMessage('Invalid Address'),
   check('street_2').optional().trim().notEmpty().withMessage('Invalid Address'),
@@ -41,10 +41,15 @@ router.patch('profile/:id', [
       status: "failed",
       showQuickNotification: true,
       message: "Invalid inputs",
-      error: error.array(),
+      error: errors.array(),
     });
   }
-  centerController.updateProfile(req, res, next);
+  try{
+    centerController.updateProfile(req, res, next);
+  }
+  catch(error){
+    next(error);
+  }
 });
 
 // get all employees
@@ -53,7 +58,7 @@ router.post('/getemployee', centerController.getEmployees);
 
 // get an employee of a center
 
-router.post('/employee/:empId', centerController.getEmployee);
+router.get('/employee/:empId', centerController.getEmployee);
 
 // add an employee to a canter
 
