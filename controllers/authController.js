@@ -95,7 +95,7 @@ exports.login = async (req, res, next) => {
       new AppError("Invalid Username or Password", 404)
     )
   }
-
+  let userData;
   let schema = findSchema.rows[0].schema;
   let table;
 
@@ -106,11 +106,6 @@ exports.login = async (req, res, next) => {
       WHERE username = $1
     `, [username]);
 
-    // const centerStoredPassword = checkIfCenterSuperAdmin.rows[0].password.toString('hex');
-    // const centerStoredSalt = checkIfCenterSuperAdmin.rows[0].salt.toString('hex');
-    // console.log('center stored password:', centerStoredPassword);
-    // console.log('center stored salt:', centerStoredSalt );
-
 
   if (checkIfCenterSuperAdmin.rows.length > 0) {
   
@@ -120,7 +115,6 @@ exports.login = async (req, res, next) => {
 
     let userData = checkIfCenterSuperAdmin.rows[0];
     userData.id = userData.center_id;
-    console.log("Center user data after assignment:", userData);
     // login logs
     await logController.logLoginRegister({ id: userData.id, type: schema, username: userData.username, action: 'login' }, res, next);
     console.log("Center user ID:", userData.id);
@@ -131,8 +125,6 @@ exports.login = async (req, res, next) => {
    } 
 
   else {
-
-  
     let userData;
 
     if (schema == "carConnectPro") {
@@ -140,12 +132,6 @@ exports.login = async (req, res, next) => {
       const result = await pool.query(`
           SELECT * FROM "carConnectPro".${table} WHERE username = $1
         `, [username]);
-
-        // const ownerStoredPassword = result.rows[0].password.toString('hex');
-        // const ownerStoredSalt = result.rows[0].salt.toString('hex');
-        // console.log('Owner stored password:', ownerStoredPassword);
-        // console.log('Owner stored salt:', ownerStoredSalt);
-
       // validate password
       if (!comFunc.validatePassword(password, result.rows[0].salt, result.rows[0].password)) {
         return res.status(401).json({ error: 'Invalid username or password' });
@@ -157,7 +143,11 @@ exports.login = async (req, res, next) => {
       else {
       table = "employee";
       const result = await pool.query(`
-        SELECT * FROM ${schema}.${table} WHERE username = $1 
+        SELECT et.id, et.username, et.password, et.salt, rt.privileges AS roles
+        FROM ${schema}."employee" AS et
+        INNER JOIN ${schema}."roles" AS rt
+        ON et.roles = rt.id
+        WHERE username = $1 
       `, [username]);
 
         // validate password
