@@ -309,7 +309,9 @@ exports.getFilteredHistory = catchAsync(async (req, res, next) => {
     `, [filterData.center.username])
 
     console.log('schema: ', schema, recordObj);
-    recordObj = recordObj.filter(record => record.schema === schema.rows[0].schema);
+    if (schema.rows.length > 0) {
+      recordObj = recordObj.filter(record => record.schema === schema.rows[0].schema);
+    }
     console.log('recordObj: ', recordObj);
   }
   let vehicleHistory = [];
