@@ -485,6 +485,10 @@ router.post(
   centerController.getOnGoingService
 );
 
+// get all finished services
+
+router.post("/finishedServices", centerController.getFinishedServices);
+
 // add one ongoing service
 
 router.post(
