@@ -114,9 +114,12 @@ router.post(
       .withMessage("Invalid NIC"),
     check("designation").trim().isString().withMessage("Invalid Designation"),
     check("manager_id")
-      .optional()
-      .trim()
-      .isInt()
+      .custom((value) => {
+        if (value !== null && !Number.isInteger(value)) {
+          throw new Error("Invalid Manager ID");
+        }
+        return true; // Validation passed
+      })
       .withMessage("Invalid Manager ID"),
     check("salary").isFloat().withMessage("Invalid salary"),
     check("isActive").isBoolean().withMessage("Invalid active state"),
@@ -426,7 +429,7 @@ router.post(
   [
     check("vehicle_id").isInt().notEmpty().withMessage("Vehicle Id is invalid"),
     check("date_of_reg").isISO8601().withMessage("Invalid date"),
-    check("mileage").isFloat().withMessage("Invalid mileage"),
+    check("mileage_on_reg").isFloat().withMessage("Invalid mileage"),
     check("owner_id").isInt().withMessage("Invalid owner id"),
   ],
   async (req, res, next) => {

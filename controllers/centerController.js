@@ -891,7 +891,7 @@ exports.getClient = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 exports.addClient = catchAsync(async (req, res, next) => {
-  const { vehicle_id, date_of_reg, mileage, owner_id } = req.body;
+  const { vehicle_id, date_of_reg, mileage_on_reg, owner_id } = req.body;
 
   const result = await pool.query(
     `
@@ -899,7 +899,7 @@ exports.addClient = catchAsync(async (req, res, next) => {
       vehicle_id, date_of_reg, mileage_on_reg, owner
     ) VALUES ($1, $2, $3, $4) RETURNING *
   `,
-    [vehicle_id, date_of_reg, mileage, owner_id]
+    [vehicle_id, date_of_reg, mileage_on_reg, owner_id]
   );
 
   return res.status(201).json({
