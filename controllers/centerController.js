@@ -565,6 +565,7 @@ exports.deleteRole = catchAsync(async (req, res, next) => {
 exports.getInventory = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       SELECT * FROM "${req.body.schema}"."part"
+      ORDER BY name
     `);
 
   return res.status(200).json({
@@ -587,6 +588,7 @@ exports.getPart = catchAsync(async (req, res, next) => {
   const result = await pool.query(
     `
       SELECT * FROM "${req.body.schema}"."part" WHERE part_id = $1
+      ORDER BY name
     `,
     [req.params.partId]
   );
@@ -610,6 +612,31 @@ exports.getPart = catchAsync(async (req, res, next) => {
   });
 });
 
+// @ DESCRIPTION      => Get parts which need reorder in center
+// @ ENDPOINT         => /center/inventory/reorder
+// @ ACCESS           => super admin of center || any employee who has privileges
+// @ CREATED BY       => Navodya Hettiarachchi
+// @ CREATED DATE     => 2024/04/23
+
+
+exports.getReorderParts = catchAsync(async (req, res, next) => {
+  const schema = req.body.schema;
+  const result = await pool.query(`
+    SELECT * FROM "service_repair_caltex"."part"
+    WHERE quantity <= reorder_quantity;
+  `);
+
+  return res.status(200).json({
+    status: "success",
+    showQuickNotification: true,
+    message: "Retrieved reorder inventory data...",
+    data: {
+      parts: result.rows,
+    },
+  });
+
+});
+
 // @ DESCRIPTION      => Add a part of a center
 // @ ENDPOINT         => /center/inventory
 // @ ACCESS           => super admin of center || any employee who has privileges
@@ -617,13 +644,13 @@ exports.getPart = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 exports.addPart = catchAsync(async (req, res, next) => {
-  const { name, description, manufacture_country, quantity, price } = req.body;
+  const { name, description, manufacture_country, quantity, price, reorder_quantity } = req.body;
   const result = await pool.query(
     `
-      INSERT INTO "${req.body.schema}"."part" (name, description, manufacture_country, quantity, price)
-      VALUES ($1, $2, $3, $4, $5) RETURNING *
+      INSERT INTO "${req.body.schema}"."part" (name, description, manufacture_country, quantity, price, reorder_quantity)
+      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
     `,
-    [name, description, manufacture_country, quantity, price]
+    [name, description, manufacture_country, quantity, price, reorder_quantity]
   );
 
   return res.status(201).json({
