@@ -286,6 +286,10 @@ router.post("/inventory", centerController.getInventory);
 
 router.post("/inventory/:partId", centerController.getPart);
 
+// get parts which need reorder
+
+router.post("/inventorys/reorder", centerController.getReorderParts);
+
 // add a part
 router.post(
   "/addInventory",
@@ -297,6 +301,7 @@ router.post(
       .withMessage("Invalid Manufacture Country"),
     check("quantity").isInt().withMessage("Invalid Quantity"),
     check("price").isFloat().withMessage("Invalid price"),
+    check("reorder_quantity").isInt().withMessage("Invalid Reorder Quantity"),
   ],
   async (req, res, next) => {
     const errors = validationResult(req);
@@ -328,6 +333,7 @@ router.patch(
       .withMessage("Invalid Manufacture Country"),
     check("quantity").optional().isInt().withMessage("Invalid Quantity"),
     check("price").optional().isFloat().withMessage("Invalid price"),
+    check("reorder_quantity").optional().isInt().withMessage("Invalid Reorder Quantity"),
   ],
   async (req, res, next) => {
     const errors = validationResult(req);
