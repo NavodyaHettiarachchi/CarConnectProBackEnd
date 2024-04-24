@@ -75,4 +75,7 @@ router.post('/vehicles/:vehicleId/filter', ownerController.getFilteredHistory);
 //get center and service record details 
 router.post('/vehicle/pdf', ownerController.getCenterData);
 
+//get owner notifications about vehicle service dates
+router.post('/notifs/:ownerId', ownerController.getVehicleNotifs);
+
 module.exports = router;

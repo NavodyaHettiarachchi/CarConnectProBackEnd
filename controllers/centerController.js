@@ -1173,6 +1173,35 @@ exports.addOnGoingService = catchAsync(async (req, res, next) => {
     ]
   );
 
+
+  const serviceHistoryResult = await pool.query(
+    `
+    SELECT vt.service_history, vt.vehicle_id FROM "carConnectPro"."vehicles" AS vt
+    JOIN "${schema}"."clients" AS ct
+    ON ct.vehicle_id = vt.vehicle_id
+    WHERE client_id = $1
+    `,
+    [client_id]
+  );
+
+  let serviceHistory = serviceHistoryResult.rows[0].service_history;
+
+  if (!serviceHistory.includes(schema)) {
+    // Append the schema name to the JSON array if it doesn't exist
+    serviceHistory.push(schema);
+
+    // Update the service_history column with the modified JSON array
+    await pool.query(
+      `
+      UPDATE "carConnectPro"."vehicles"
+      SET service_history = $1
+      WHERE id = $2
+    `,
+      [serviceHistory, serviceHistoryResult.rows[0].vehicle_id]
+    );
+  }
+
+
   return res.status(201).json({
     status: "success",
     showQuickNotification: true,

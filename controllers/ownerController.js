@@ -40,9 +40,9 @@ exports.getProfile = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/02/26
 
-exports.updateProfile = catchAsync(async (req, res) => { 
-  const userId=req.params.userId;//@Harindu
-  const { name, phone ,dob,gender , nic, city, province} = req.body;
+exports.updateProfile = catchAsync(async (req, res) => {
+  const userId = req.params.userId;//@Harindu
+  const { name, phone, dob, gender, nic, city, province } = req.body;
 
   let sql = `
     UPDATE "carConnectPro"."owner"
@@ -51,31 +51,31 @@ exports.updateProfile = catchAsync(async (req, res) => {
     RETURNING id, username, name, email, phone ,dob,gender , nic, city, province`;
 
   // Set the values to be used in the SQL query
-  const values = [name,phone,dob,gender , nic, city, province,userId];
+  const values = [name, phone, dob, gender, nic, city, province, userId];
 
-try{
-  const result = await pool.query(sql,values);
+  try {
+    const result = await pool.query(sql, values);
 
-  // logging
-  let logObj = {
-    id: req.params.userId,
-    username: result.rows[0].username,
-    type: "Vehicle Owner",
-    action: "Update",
-    updatedFields: req.body
-  }
-
-  await logController.logProfileChange(logObj, res, next);
-
-  return res.status(200).json({
-    status: "success",
-    showQuickNotification: true,
-    message: "Updated profile successfuly...",
-    data: {
-      userData: result.rows[0]
+    // logging
+    let logObj = {
+      id: req.params.userId,
+      username: result.rows[0].username,
+      type: "Vehicle Owner",
+      action: "Update",
+      updatedFields: req.body
     }
-  });
-}catch (error) {
+
+    await logController.logProfileChange(logObj, res, next);
+
+    return res.status(200).json({
+      status: "success",
+      showQuickNotification: true,
+      message: "Updated profile successfuly...",
+      data: {
+        userData: result.rows[0]
+      }
+    });
+  } catch (error) {
     return res.status(500).json({
       status: "error",
       showQuickNotification: true,
@@ -94,7 +94,7 @@ try{
 // @ CREATED BY       => Navodya Hettiarachchi
 // @ CREATED DATE     => 2024/04/19
 
-exports.addVehicle = catchAsync(async (req, res, next) => { 
+exports.addVehicle = catchAsync(async (req, res, next) => {
 
   // const {
   //   number_plate,
@@ -411,7 +411,7 @@ exports.getCenterData = catchAsync(async (req, res, next) => {
   // I need center data (CompanyName,street_1,street_2,city,province,phone,email,) and 
   // service_record details(price, item, type, quantity, total) equals to the service_record.record_id
   // I can send parameters through the request (owner.id, service_record.record_id, vehicle_id) 
-  
+
   const schema = req.body.schema;
 
   const result = await pool.query(`
@@ -428,6 +428,64 @@ exports.getCenterData = catchAsync(async (req, res, next) => {
     message: "Retrieved filtered history successfully...",
     data: {
       centerData: result.rows[0],
+    }
+  });
+});
+
+// @ DESCRIPTION      => Get vehicle service notification
+// @ ENDPOINT         => /notifs/:ownerId
+// @ ACCESS           => Vehicle Owner
+// @ CREATED BY       => Navodya Hettiarachchi
+// @ CREATED DATE     => 2024/04/25
+
+exports.getVehicleNotifs = catchAsync(async (req, res, next) => {
+  const ownerId = req.params.ownerId;
+
+  const vehicles = await pool.query(`
+    SELECT vt.vehicle_id, vt.number_plate, vt.service_history FROM "carConnectPro"."owner_vehicle" AS OT
+    RIGHT JOIN "carConnectPro"."vehicles" AS vt
+    ON ot.vehicle_id = vt.vehicle_id
+    WHERE ot.owner_id = $1 
+  `, [ownerId]);
+
+  let vehicleNotifs = [];
+
+  for (let i = 0; i < vehicles.rows.length; i++) {
+    const vehicle = vehicles.rows[i];
+    const serviceHistory = vehicle.service_history;
+    console.log('service ', serviceHistory);
+    if (serviceHistory) { 
+      console.log('in');
+      let lastServiceDate = null;
+
+      for (let j = 0; j < serviceHistory.length; j++) {
+        const record = serviceHistory[j];
+        const result = await pool.query(`
+        SELECT MAX(service_date) AS last_service_date FROM "${record.schema}"."service_records" AS st
+        JOIN "${record.schema}"."clients" AS ct
+        ON st.client_id = ct.id
+        WHERE ct.vehicle_id = $1
+      `, [vehicle.vehicle_id]);
+
+        const lastServiceRecord = result.rows[0];
+        if (lastServiceRecord.last_service_date && (!lastServiceDate || lastServiceRecord.last_service_date > lastServiceDate)) {
+          lastServiceDate = lastServiceRecord.last_service_date;
+        }
+      }
+
+      vehicleNotifs.push({
+        vehicle_id: vehicle.vehicle_id,
+        number_plate: vehicle.number_plate,
+        last_service_date: lastServiceDate
+      });
+    }
+  }
+
+  return res.status(200).json({
+    status: "success",
+    message: "Retrieved vehicle notifications successfully",
+    data: {
+      vehicleNotifs: vehicleNotifs
     }
   });
 });
