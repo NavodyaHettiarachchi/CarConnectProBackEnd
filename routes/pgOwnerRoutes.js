@@ -64,6 +64,8 @@ router.post('/vehicle', upload.fields([
 
 router.post('/vehicles/:vehicleId', ownerController.getVehicle);
 
+
+
 // Get Vehicle history
 router.post('/vehicles/:vehicleId/history', ownerController.getVehicleHistory);
 
