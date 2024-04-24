@@ -53,6 +53,19 @@ exports.updateProfile = catchAsync(async (req, res) => {
   // Set the values to be used in the SQL query
   const values = [name,phone,dob,gender , nic, city, province,userId];
 
+  // let count = 1;
+  // for (let key in req.body) {
+  //   if (key !== userId) {
+  //     sql = sql.concat((key).toString(), " = $", count.toString(), ", ");
+  //     count++;
+  //     dataArr.push(req.body[key]);
+  //   }
+  // }
+
+
+  // sql = sql.substring(0, sql.length - 2);
+  // sq = sql.concat(" WHERE id = $", count.toString(), " RETURNING id, username, name, gender, dob, nic, street_1, street_2, city, province, email, phone, profile_pic, roles");
+  // dataArr.push(req.params.userId);
 try{
   const result = await pool.query(sql,values);
 
@@ -266,7 +279,7 @@ exports.getVehicle = catchAsync(async (req, res, next) => {
   const owner_id = req.body.id;
 
   const result = await pool.query(`
-    SELECT vt.vehicle_id, vt.number_plate,vt.fuel_type, vt.model, vt.make, vt.service_history, ot.reg_year, o.name, o.phone
+    SELECT vt.vehicle_id, vt.number_plate, vt.model, vt.make, vt.service_history, ot.reg_year, o.name
     FROM "carConnectPro"."owner_vehicle" as OT
     RIGHT JOIN "carConnectPro"."vehicles" AS vt
     ON ot.vehicle_id = vt.vehicle_id
@@ -314,12 +327,11 @@ exports.getVehicleHistory = catchAsync(async (req, res, next) => {
   }
 
   const recordObj = result.rows[0].service_history;
-  console.log(result, req.params.vehicleId);
   let vehicleHistory = [];
 
   const queries = recordObj.map(async record => {
     const rec = await pool.query(`
-      SELECT *, '${record.schema}' AS schema FROM "${record.schema}"."service_records" AS st
+      SELECT * FROM "${record.schema}"."service_records" AS st
       JOIN "${record.schema}"."clients" AS ct
       ON st.client_id = ct.id
       WHERE ct.vehicle_id = $1
@@ -374,7 +386,7 @@ exports.getFilteredHistory = catchAsync(async (req, res, next) => {
 
   const queries = recordObj.map(async record => {
     const rec = await pool.query(`
-      SELECT *, '${record.schema}' AS schema FROM "${record.schema}"."service_records" AS st
+      SELECT * FROM "${record.schema}"."service_records" AS st
       JOIN "${record.schema}"."clients" AS ct
       ON st.client_id = ct.id
       WHERE ct.vehicle_id = $1 
@@ -397,37 +409,4 @@ exports.getFilteredHistory = catchAsync(async (req, res, next) => {
     }
   });
 
-});
-
-// @ DESCRIPTION      => Get center detatils
-// @ ENDPOINT         => /profile/:userId/center
-// @ ACCESS           => Vehicle Owner
-// @ CREATED BY       => Navodya Hettiarachchi & Thisara Nilupul
-// @ CREATED DATE     => 2024/04/22
-
-
-exports.getCenterData = catchAsync(async (req, res, next) => {
-
-  // I need center data (CompanyName,street_1,street_2,city,province,phone,email,) and 
-  // service_record details(price, item, type, quantity, total) equals to the service_record.record_id
-  // I can send parameters through the request (owner.id, service_record.record_id, vehicle_id) 
-  
-  const schema = req.body.schema;
-
-  const result = await pool.query(`
-    SELECT ct.name, ct.street_1, ct.street_2, ct.province, ct.email, ct.phone, ct.city
-    FROM "carConnectPro"."center" AS ct
-    INNER JOIN "carConnectPro"."schema_mapping" AS sm
-    ON ct.username = sm.username
-    WHERE sm.schema = $1
-  `, [schema]);
-
-  return res.status(200).json({
-    status: "success",
-    showQuickNotification: true,
-    message: "Retrieved filtered history successfully...",
-    data: {
-      centerData: result.rows[0],
-    }
-  });
 });
