@@ -96,6 +96,69 @@ try{
 
 exports.addVehicle = catchAsync(async (req, res, next) => { 
 
+  // const {
+  //   number_plate,
+  //   model,
+  //   make,
+  //   engine_no,
+  //   chassis_no,
+  //   transmission_type,
+  //   fuel_type,
+  //   seating_capacity,
+  //   mileage
+  // } = req.body;
+
+  // const files = req.files;
+
+  // let dataArr = [
+  //   number_plate,
+  //   model,
+  //   make,
+  //   engine_no,
+  //   chassis_no,
+  //   transmission_type,
+  //   fuel_type,
+  //   seating_capacity,
+  //   mileage
+  // ];
+  // let count = 10;
+  // let valuesStr = `VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9`;
+  // let sql = `
+  //   INSERT INTO "carConnectPro"."vehicles" (
+  //     number_plate, model, make, engine_no, chassis_no, transmission_type, fuel_type, seating_capacity, mileage
+  // `;
+
+  // Object.values(files).forEach((fileArray) => {
+  //   console.log(fileArray);
+  //   if (Array.isArray(fileArray) && fileArray.length > 0) {
+  //     const file = fileArray[0];
+  //     sql = sql.concat(', ' + file.fieldname);
+  //     dataArr.push(file.buffer);
+  //     valuesStr = valuesStr.concat(", $" + (++count));
+  //   }
+  // });
+  // sql = sql.concat(') ' + valuesStr +') RETURNING *');
+
+  // const result = await pool.query(`
+  //     ${sql}
+  // `, dataArr);
+
+  // const vehicle_id = result.rows[0].vehicle_id;
+
+  // const result1 = await pool.query(`
+  //   INSERT INTO "carConnectPro"."owner_vehicle" (owner_id, vehicle_id, reg_year)
+  //   VALUES ($1, $2, $3);
+  // `, [req.body.owner_id, vehicle_id, req.body.reg_year]);
+
+  // return res.status(201).json({
+  //   status: "success",
+  //   showQuickNotification: true,
+  //   message: "Vehicle added successfully",
+  //   data: {
+  //     vehicle: result.rows[0]
+  //   }
+  // })
+
   const {
     number_plate,
     model,
@@ -105,60 +168,65 @@ exports.addVehicle = catchAsync(async (req, res, next) => {
     transmission_type,
     fuel_type,
     seating_capacity,
-    mileage
+    mileage,
+    owner_id
   } = req.body;
 
-  const files = req.files;
+  // Extract files from req.files
+  const { photo_1, photo_2, photo_3, document } = req.files;
 
-  let dataArr = [
-    number_plate,
-    model,
-    make,
-    engine_no,
-    chassis_no,
-    transmission_type,
-    fuel_type,
-    seating_capacity,
-    mileage
-  ];
-  let count = 10;
-  let valuesStr = `VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9`;
-  let sql = `
-    INSERT INTO "carConnectPro"."vehicles" (
-      number_plate, model, make, engine_no, chassis_no, transmission_type, fuel_type, seating_capacity, mileage
-  `
-  if (files) { 
-    Object.keys(files).forEach((key) => {
-      if (files[key] !== null) {
-        sql = sql.concat(', ' + key.toString());
-        dataArr.push(files[key][0].buffer);
-        valuesStr = valuesStr.concat(", " + count.toString());
-        count++;
+  try {
+    // Initialize variables for file buffers
+    let photo_1_buffer = null;
+    let photo_2_buffer = null;
+    let photo_3_buffer = null;
+    let document_buffer = null;
+
+    // Check if files exist and assign their buffers
+    if (photo_1) photo_1_buffer = photo_1[0].buffer;
+    if (photo_2) photo_2_buffer = photo_2[0].buffer;
+    if (photo_3) photo_3_buffer = photo_3[0].buffer;
+    if (document) document_buffer = document[0].buffer;
+
+    // Insert vehicle data into vehicles table
+    const vehicleInsertQuery = `
+      INSERT INTO "carConnectPro"."vehicles" (
+        number_plate, model, make, engine_no, chassis_no, transmission_type, fuel_type, seating_capacity, mileage,
+        photo_1, photo_2, photo_3, document
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      RETURNING *;
+    `;
+    const vehicleInsertValues = [
+      number_plate, model, make, engine_no, chassis_no, transmission_type, fuel_type, seating_capacity, mileage,
+      photo_1_buffer, photo_2_buffer, photo_3_buffer, document_buffer
+    ];
+
+    const vehicleResult = await pool.query(vehicleInsertQuery, vehicleInsertValues);
+    const vehicleId = vehicleResult.rows[0].vehicle_id;
+
+    // Insert owner-vehicle relation data into owner_vehicle table
+    const ownerVehicleInsertQuery = `
+      INSERT INTO "carConnectPro"."owner_vehicle" (owner_id, vehicle_id, reg_year)
+      VALUES ($1, $2, $3);
+    `;
+    const ownerVehicleInsertValues = [owner_id, vehicleId, req.body.reg_year];
+    await pool.query(ownerVehicleInsertQuery, ownerVehicleInsertValues);
+
+    return res.status(201).json({
+      status: 'success',
+      message: 'Vehicle added successfully',
+      data: {
+        vehicle: vehicleResult.rows[0]
       }
     });
+  } catch (error) {
+    console.error('Error adding vehicle:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to add vehicle',
+      error: error.message
+    });
   }
-  sql = sql.concat(') ' + valuesStr +') RETURNING *');
-
-  const result = await pool.query(`
-      ${sql}
-  `, dataArr);
-
-  const vehicle_id = result.rows[0].vehicle_id;
-
-  const result1 = await pool.query(`
-    INSERT INTO "carConnectPro"."owner_vehicle" (owner_id, vehicle_id, reg_year)
-    VALUES ($1, $2, $3);
-  `, [req.body.owner_id, vehicle_id, req.body.reg_year]);
-
-  return res.status(201).json({
-    status: "success",
-    showQuickNotification: true,
-    message: "Vehicle added successfully",
-    data: {
-      vehicle: result.rows[0]
-    }
-  })
-
 });
 
 
@@ -172,7 +240,7 @@ exports.getVehicles = catchAsync(async (req, res, next) => {
   const owner_id = req.body.id;
 
   const result = await pool.query(`
-    SELECT vt.vehicle_id, vt.number_plate, vt.model, vt.make, ot.reg_year FROM "carConnectPro"."owner_vehicle" as OT
+    SELECT vt.vehicle_id, vt.number_plate, vt.model, vt.make, ot.reg_year, vt.photo_1 FROM "carConnectPro"."owner_vehicle" as OT
     RIGHT JOIN "carConnectPro"."vehicles" AS vt
     ON ot.vehicle_id = vt.vehicle_id
     WHERE ot.owner_id = $1 

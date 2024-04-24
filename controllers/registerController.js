@@ -162,7 +162,8 @@ async function createSchemaAndTables(schemaName, next) {
       description TEXT NOT NULL,
       manufacture_country TEXT NOT NULL,
       quantity INTEGER NOT NULL,
-      price NUMERIC(10,2) NOT NULL
+      price NUMERIC(10,2) NOT NULL,
+      reorder_quantity INTEGER NOT NULL
     )`);
 
     await client.query(`CREATE TABLE ${schemaName}.roles(

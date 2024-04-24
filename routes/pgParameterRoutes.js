@@ -9,11 +9,17 @@ router.get('/gender', parameterController.getGender);
 
 // Fuel type
 
-router.get('/fuelType', parameterController.getFuelType);
+router.get('/fuelType', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  parameterController.getFuelType(req, res, next);
+});
 
 // transmission type
 
-router.get('/transmissionType', parameterController.getTransmissionType);
+router.get('/transmissionType', (req, res, next) => { 
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  parameterController.getTransmissionType(req, res, next);
+});
 
 // center type
 
