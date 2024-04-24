@@ -53,19 +53,6 @@ exports.updateProfile = catchAsync(async (req, res) => {
   // Set the values to be used in the SQL query
   const values = [name,phone,dob,gender , nic, city, province,userId];
 
-  // let count = 1;
-  // for (let key in req.body) {
-  //   if (key !== userId) {
-  //     sql = sql.concat((key).toString(), " = $", count.toString(), ", ");
-  //     count++;
-  //     dataArr.push(req.body[key]);
-  //   }
-  // }
-
-
-  // sql = sql.substring(0, sql.length - 2);
-  // sq = sql.concat(" WHERE id = $", count.toString(), " RETURNING id, username, name, gender, dob, nic, street_1, street_2, city, province, email, phone, profile_pic, roles");
-  // dataArr.push(req.params.userId);
 try{
   const result = await pool.query(sql,values);
 
@@ -109,6 +96,69 @@ try{
 
 exports.addVehicle = catchAsync(async (req, res, next) => { 
 
+  // const {
+  //   number_plate,
+  //   model,
+  //   make,
+  //   engine_no,
+  //   chassis_no,
+  //   transmission_type,
+  //   fuel_type,
+  //   seating_capacity,
+  //   mileage
+  // } = req.body;
+
+  // const files = req.files;
+
+  // let dataArr = [
+  //   number_plate,
+  //   model,
+  //   make,
+  //   engine_no,
+  //   chassis_no,
+  //   transmission_type,
+  //   fuel_type,
+  //   seating_capacity,
+  //   mileage
+  // ];
+  // let count = 10;
+  // let valuesStr = `VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9`;
+  // let sql = `
+  //   INSERT INTO "carConnectPro"."vehicles" (
+  //     number_plate, model, make, engine_no, chassis_no, transmission_type, fuel_type, seating_capacity, mileage
+  // `;
+
+  // Object.values(files).forEach((fileArray) => {
+  //   console.log(fileArray);
+  //   if (Array.isArray(fileArray) && fileArray.length > 0) {
+  //     const file = fileArray[0];
+  //     sql = sql.concat(', ' + file.fieldname);
+  //     dataArr.push(file.buffer);
+  //     valuesStr = valuesStr.concat(", $" + (++count));
+  //   }
+  // });
+  // sql = sql.concat(') ' + valuesStr +') RETURNING *');
+
+  // const result = await pool.query(`
+  //     ${sql}
+  // `, dataArr);
+
+  // const vehicle_id = result.rows[0].vehicle_id;
+
+  // const result1 = await pool.query(`
+  //   INSERT INTO "carConnectPro"."owner_vehicle" (owner_id, vehicle_id, reg_year)
+  //   VALUES ($1, $2, $3);
+  // `, [req.body.owner_id, vehicle_id, req.body.reg_year]);
+
+  // return res.status(201).json({
+  //   status: "success",
+  //   showQuickNotification: true,
+  //   message: "Vehicle added successfully",
+  //   data: {
+  //     vehicle: result.rows[0]
+  //   }
+  // })
+
   const {
     number_plate,
     model,
@@ -118,58 +168,65 @@ exports.addVehicle = catchAsync(async (req, res, next) => {
     transmission_type,
     fuel_type,
     seating_capacity,
-    mileage
+    mileage,
+    owner_id
   } = req.body;
 
-  const files = req.files;
+  // Extract files from req.files
+  const { photo_1, photo_2, photo_3, document } = req.files;
 
-  let dataArr = [
-    number_plate,
-    model,
-    make,
-    engine_no,
-    chassis_no,
-    transmission_type,
-    fuel_type,
-    seating_capacity,
-    mileage
-  ];
-  let count = 10;
-  let valuesStr = `VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9`;
-  let sql = `
-    INSERT INTO "carConnectPro"."vehicle" (
-      number_plate, model, make, engine_no, chassis_no, transmission_type, fuel_type, seating_capacity, mileage
-  `
-  Object.keys(files).forEach((key) => {
-    if (files[key] !== null) {
-      sql = sql.concat(', ' + key.toString());
-      dataArr.push(files[key][0].buffer);
-      valuesStr = valuesStr.concat(", " + count.toString());
-      count++;
-    }
-  });
-  sql = sql.concat(') ' + valuesStr +') RETURNING *');
+  try {
+    // Initialize variables for file buffers
+    let photo_1_buffer = null;
+    let photo_2_buffer = null;
+    let photo_3_buffer = null;
+    let document_buffer = null;
 
-  const result = await pool.query(`
-      ${sql}
-  `, dataArr);
+    // Check if files exist and assign their buffers
+    if (photo_1) photo_1_buffer = photo_1[0].buffer;
+    if (photo_2) photo_2_buffer = photo_2[0].buffer;
+    if (photo_3) photo_3_buffer = photo_3[0].buffer;
+    if (document) document_buffer = document[0].buffer;
 
-  const vehicle_id = result.rows[0].vehicle_id;
+    // Insert vehicle data into vehicles table
+    const vehicleInsertQuery = `
+      INSERT INTO "carConnectPro"."vehicles" (
+        number_plate, model, make, engine_no, chassis_no, transmission_type, fuel_type, seating_capacity, mileage,
+        photo_1, photo_2, photo_3, document
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      RETURNING *;
+    `;
+    const vehicleInsertValues = [
+      number_plate, model, make, engine_no, chassis_no, transmission_type, fuel_type, seating_capacity, mileage,
+      photo_1_buffer, photo_2_buffer, photo_3_buffer, document_buffer
+    ];
 
-  const result1 = await pool.query(`
-    INSERT INTO "carConnectPro"."owner_vehicle" (owner_id, vehicle_id, reg_year)
-    VALUES ($1, $2, $3);
-  `, [req.body.owner_id, vehicle_id, req.body.reg_year]);
+    const vehicleResult = await pool.query(vehicleInsertQuery, vehicleInsertValues);
+    const vehicleId = vehicleResult.rows[0].vehicle_id;
 
-  return res.status(201).json({
-    status: "success",
-    showQuickNotification: true,
-    message: "Vehicle added successfully",
-    data: {
-      vehicle: result.rows[0]
-    }
-  })
+    // Insert owner-vehicle relation data into owner_vehicle table
+    const ownerVehicleInsertQuery = `
+      INSERT INTO "carConnectPro"."owner_vehicle" (owner_id, vehicle_id, reg_year)
+      VALUES ($1, $2, $3);
+    `;
+    const ownerVehicleInsertValues = [owner_id, vehicleId, req.body.reg_year];
+    await pool.query(ownerVehicleInsertQuery, ownerVehicleInsertValues);
 
+    return res.status(201).json({
+      status: 'success',
+      message: 'Vehicle added successfully',
+      data: {
+        vehicle: vehicleResult.rows[0]
+      }
+    });
+  } catch (error) {
+    console.error('Error adding vehicle:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to add vehicle',
+      error: error.message
+    });
+  }
 });
 
 
@@ -183,7 +240,7 @@ exports.getVehicles = catchAsync(async (req, res, next) => {
   const owner_id = req.body.id;
 
   const result = await pool.query(`
-    SELECT vt.vehicle_id, vt.number_plate, vt.model, vt.make, ot.reg_year FROM "carConnectPro"."owner_vehicle" as OT
+    SELECT vt.vehicle_id, vt.number_plate, vt.model, vt.make, ot.reg_year, vt.photo_1 FROM "carConnectPro"."owner_vehicle" as OT
     RIGHT JOIN "carConnectPro"."vehicles" AS vt
     ON ot.vehicle_id = vt.vehicle_id
     WHERE ot.owner_id = $1 
@@ -209,7 +266,7 @@ exports.getVehicle = catchAsync(async (req, res, next) => {
   const owner_id = req.body.id;
 
   const result = await pool.query(`
-    SELECT vt.vehicle_id, vt.number_plate, vt.model, vt.make, vt.service_history, ot.reg_year, o.name
+    SELECT vt.vehicle_id, vt.number_plate,vt.fuel_type, vt.model, vt.make, vt.service_history, ot.reg_year, o.name, o.phone
     FROM "carConnectPro"."owner_vehicle" as OT
     RIGHT JOIN "carConnectPro"."vehicles" AS vt
     ON ot.vehicle_id = vt.vehicle_id
@@ -257,11 +314,12 @@ exports.getVehicleHistory = catchAsync(async (req, res, next) => {
   }
 
   const recordObj = result.rows[0].service_history;
+  console.log(result, req.params.vehicleId);
   let vehicleHistory = [];
 
   const queries = recordObj.map(async record => {
     const rec = await pool.query(`
-      SELECT * FROM "${record.schema}"."service_records" AS st
+      SELECT *, '${record.schema}' AS schema FROM "${record.schema}"."service_records" AS st
       JOIN "${record.schema}"."clients" AS ct
       ON st.client_id = ct.id
       WHERE ct.vehicle_id = $1
@@ -307,14 +365,16 @@ exports.getFilteredHistory = catchAsync(async (req, res, next) => {
     `, [filterData.center.username])
 
     console.log('schema: ', schema, recordObj);
-    recordObj = recordObj.filter(record => record.schema === schema.rows[0].schema);
+    if (schema.rows.length > 0) {
+      recordObj = recordObj.filter(record => record.schema === schema.rows[0].schema);
+    }
     console.log('recordObj: ', recordObj);
   }
   let vehicleHistory = [];
 
   const queries = recordObj.map(async record => {
     const rec = await pool.query(`
-      SELECT * FROM "${record.schema}"."service_records" AS st
+      SELECT *, '${record.schema}' AS schema FROM "${record.schema}"."service_records" AS st
       JOIN "${record.schema}"."clients" AS ct
       ON st.client_id = ct.id
       WHERE ct.vehicle_id = $1 
@@ -337,4 +397,37 @@ exports.getFilteredHistory = catchAsync(async (req, res, next) => {
     }
   });
 
+});
+
+// @ DESCRIPTION      => Get center detatils
+// @ ENDPOINT         => /profile/:userId/center
+// @ ACCESS           => Vehicle Owner
+// @ CREATED BY       => Navodya Hettiarachchi & Thisara Nilupul
+// @ CREATED DATE     => 2024/04/22
+
+
+exports.getCenterData = catchAsync(async (req, res, next) => {
+
+  // I need center data (CompanyName,street_1,street_2,city,province,phone,email,) and 
+  // service_record details(price, item, type, quantity, total) equals to the service_record.record_id
+  // I can send parameters through the request (owner.id, service_record.record_id, vehicle_id) 
+  
+  const schema = req.body.schema;
+
+  const result = await pool.query(`
+    SELECT ct.name, ct.street_1, ct.street_2, ct.province, ct.email, ct.phone, ct.city
+    FROM "carConnectPro"."center" AS ct
+    INNER JOIN "carConnectPro"."schema_mapping" AS sm
+    ON ct.username = sm.username
+    WHERE sm.schema = $1
+  `, [schema]);
+
+  return res.status(200).json({
+    status: "success",
+    showQuickNotification: true,
+    message: "Retrieved filtered history successfully...",
+    data: {
+      centerData: result.rows[0],
+    }
+  });
 });

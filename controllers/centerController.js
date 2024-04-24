@@ -72,7 +72,9 @@ exports.getProfile = catchAsync(async (req, res, next) => {
     SELECT center_id, center_type, username, name, email, phone, street_1, street_2, city, province, roles
     FROM "carConnectPro"."center" 
     WHERE center_id = $1 AND center_type in ($2, $3,$4)
-  `, [centerId, "S","R","B",]);
+  `,
+    [centerId, "S", "R", "B"]
+  );
 
   // console.log('Request received for center ID:', centerId);
   // console.log('Query result:', result);
@@ -104,9 +106,10 @@ exports.getProfile = catchAsync(async (req, res, next) => {
 
 exports.updateProfile = catchAsync(async (req, res, next) => {
   const userId = req.params.userId; // @Harindu
-  const { name, phone, center_type, street_1, street_2, city, province } = req.body;
+  const { name, phone, center_type, street_1, street_2, city, province } =
+    req.body;
 
-  console.log('Received request to update profile:', req.body);
+  console.log("Received request to update profile:", req.body);
 
   let sql = `
   UPDATE "carConnectPro"."center"
@@ -115,18 +118,27 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
   RETURNING center_id, username, name, email, phone, center_type, street_1, street_2, city, province;
   `;
 
-  const values = [name, phone, center_type, street_1, street_2, city, province, userId];
+  const values = [
+    name,
+    phone,
+    center_type,
+    street_1,
+    street_2,
+    city,
+    province,
+    userId,
+  ];
 
   // console.log('SQL query:', sql);
   // console.log('SQL values:', values);
 
   try {
     const result = await pool.query(sql, values);
-    
+
     if (result.rowCount === 0) {
       return res.status(404).json({
         status: "failed",
-        message: "User not found or no changes made to the profile."
+        message: "User not found or no changes made to the profile.",
       });
     }
 
@@ -136,26 +148,26 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
       username: result.rows[0].username,
       type: "Center",
       action: "Update",
-      updatedFields: req.body
+      updatedFields: req.body,
     };
 
     await logController.logProfileChange(logObj, res, next);
-    
+
     return res.status(200).json({
       status: "success",
       showQuickNotification: true,
       message: "Profile updated successfully.",
       data: {
-        userData: result.rows[0]
-      }
+        userData: result.rows[0],
+      },
     });
   } catch (error) {
-    console.error('Error updating profile:', error);
+    console.error("Error updating profile:", error);
     return res.status(500).json({
       status: "error",
       showQuickNotification: true,
       message: "An error occurred while updating profile.",
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -572,6 +584,7 @@ exports.deleteRole = catchAsync(async (req, res, next) => {
 exports.getInventory = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
       SELECT * FROM "${req.body.schema}"."part"
+      ORDER BY name
     `);
 
   return res.status(200).json({
@@ -594,6 +607,7 @@ exports.getPart = catchAsync(async (req, res, next) => {
   const result = await pool.query(
     `
       SELECT * FROM "${req.body.schema}"."part" WHERE part_id = $1
+      ORDER BY name
     `,
     [req.params.partId]
   );
@@ -617,6 +631,31 @@ exports.getPart = catchAsync(async (req, res, next) => {
   });
 });
 
+// @ DESCRIPTION      => Get parts which need reorder in center
+// @ ENDPOINT         => /center/inventory/reorder
+// @ ACCESS           => super admin of center || any employee who has privileges
+// @ CREATED BY       => Navodya Hettiarachchi
+// @ CREATED DATE     => 2024/04/23
+
+
+exports.getReorderParts = catchAsync(async (req, res, next) => {
+  const schema = req.body.schema;
+  const result = await pool.query(`
+    SELECT * FROM "service_repair_caltex"."part"
+    WHERE quantity <= reorder_quantity;
+  `);
+
+  return res.status(200).json({
+    status: "success",
+    showQuickNotification: true,
+    message: "Retrieved reorder inventory data...",
+    data: {
+      parts: result.rows,
+    },
+  });
+
+});
+
 // @ DESCRIPTION      => Add a part of a center
 // @ ENDPOINT         => /center/inventory
 // @ ACCESS           => super admin of center || any employee who has privileges
@@ -624,13 +663,13 @@ exports.getPart = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 exports.addPart = catchAsync(async (req, res, next) => {
-  const { name, description, manufacture_country, quantity, price } = req.body;
+  const { name, description, manufacture_country, quantity, price, reorder_quantity } = req.body;
   const result = await pool.query(
     `
-      INSERT INTO "${req.body.schema}"."part" (name, description, manufacture_country, quantity, price)
-      VALUES ($1, $2, $3, $4, $5) RETURNING *
+      INSERT INTO "${req.body.schema}"."part" (name, description, manufacture_country, quantity, price, reorder_quantity)
+      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
     `,
-    [name, description, manufacture_country, quantity, price]
+    [name, description, manufacture_country, quantity, price, reorder_quantity]
   );
 
   return res.status(201).json({
@@ -910,7 +949,7 @@ exports.getClient = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 exports.addClient = catchAsync(async (req, res, next) => {
-  const { vehicle_id, date_of_reg, mileage, owner_id } = req.body;
+  const { vehicle_id, date_of_reg, mileage_on_reg, owner_id } = req.body;
 
   const result = await pool.query(
     `
@@ -918,7 +957,7 @@ exports.addClient = catchAsync(async (req, res, next) => {
       vehicle_id, date_of_reg, mileage_on_reg, owner
     ) VALUES ($1, $2, $3, $4) RETURNING *
   `,
-    [vehicle_id, date_of_reg, mileage, owner_id]
+    [vehicle_id, date_of_reg, mileage_on_reg, owner_id]
   );
 
   return res.status(201).json({
@@ -990,7 +1029,9 @@ exports.getOnGoingServices = catchAsync(async (req, res, next) => {
       sr."isOngoing" = $1
     GROUP BY
       sr.id, sr.client_id, sr.service_date, sr.description, sr.mileage, sr.cost
-  `, [true]);
+  `,
+    [true]
+  );
 
   return res.status(200).json({
     status: "success",
@@ -998,6 +1039,46 @@ exports.getOnGoingServices = catchAsync(async (req, res, next) => {
     message: "Retrieved Ongoing services successfully...",
     data: {
       ogs: result.rows,
+    },
+  });
+});
+
+// @ DESCRIPTION      => Get Finished services of a center
+// @ ENDPOINT         => /center/finishedServices
+// @ ACCESS           => super admin of center || any employee who has privileges
+// @ CREATED BY       => Navodya Hettiarachchi
+// @ CREATED DATE     => 2024/02/24
+
+exports.getFinishedServices = catchAsync(async (req, res, next) => {
+  const result = await pool.query(
+    `
+    SELECT 
+      sr.id AS service_record_id,
+      sr.client_id,
+      sr.service_date,
+      sr.description,
+      sr.mileage,
+      sr.cost,
+      sr.details,
+      array_agg(st.technician_id) AS technicians
+    FROM 
+      "${req.body.schema}"."service_records" AS sr
+    LEFT JOIN 
+      "${req.body.schema}"."service_technician" AS st ON sr.id = st.service_id
+    WHERE 
+      sr."isOngoing" = $1
+    GROUP BY
+      sr.id, sr.client_id, sr.service_date, sr.description, sr.mileage, sr.cost
+  `,
+    [false]
+  );
+
+  return res.status(200).json({
+    status: "success",
+    showQuickNotification: true,
+    message: "Retrieved Ongoing services successfully...",
+    data: {
+      fs: result.rows,
     },
   });
 });

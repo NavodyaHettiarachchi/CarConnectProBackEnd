@@ -22,31 +22,52 @@ router.get("/", async (req, res) => {
   }
 });
 
-
 // get profile of center
-router.get('/profile/:id', centerController.getProfile);
+router.get("/profile/:id", centerController.getProfile);
 
 // update profile information of center
 
-router.patch('/profile/:userId', [
-  check('name').optional().trim().notEmpty().withMessage('Name is required'),
-  check('street_1').optional().trim().notEmpty().withMessage('Invalid Address'),
-  check('street_2').optional().trim().notEmpty().withMessage('Invalid Address'),
-  check('city').optional().trim().isString().withMessage('Invalid City Name'),
-  check('province').optional().trim().isString().withMessage('Invalid Province'),
-  check('phone').optional().isString().trim().isLength({ min: 10, max: 10 }).withMessage('Invalid phone number'),
-], async (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      status: "failed",
-      showQuickNotification: true,
-      message: "Invalid inputs",
-      error: errors.array(),
-    });
+router.patch(
+  "/profile/:userId",
+  [
+    check("name").optional().trim().notEmpty().withMessage("Name is required"),
+    check("street_1")
+      .optional()
+      .trim()
+      .notEmpty()
+      .withMessage("Invalid Address"),
+    check("street_2")
+      .optional()
+      .trim()
+      .notEmpty()
+      .withMessage("Invalid Address"),
+    check("city").optional().trim().isString().withMessage("Invalid City Name"),
+    check("province")
+      .optional()
+      .trim()
+      .isString()
+      .withMessage("Invalid Province"),
+    check("phone")
+      .optional()
+      .isString()
+      .trim()
+      .isLength({ min: 10, max: 10 })
+      .withMessage("Invalid phone number"),
+  ],
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        status: "failed",
+        showQuickNotification: true,
+        message: "Invalid inputs",
+        error: errors.array(),
+      });
+    }
+    centerController.updateProfile(req, res, next);
+    ext(error);
   }
-    centerController.updateProfile(req, res, next);ext(error);
-});
+);
 
 // get all employees
 
@@ -93,9 +114,12 @@ router.post(
       .withMessage("Invalid NIC"),
     check("designation").trim().isString().withMessage("Invalid Designation"),
     check("manager_id")
-      .optional()
-      .trim()
-      .isInt()
+      .custom((value) => {
+        if (value !== null && !Number.isInteger(value)) {
+          throw new Error("Invalid Manager ID");
+        }
+        return true; // Validation passed
+      })
       .withMessage("Invalid Manager ID"),
     check("salary").isFloat().withMessage("Invalid salary"),
     check("isActive").isBoolean().withMessage("Invalid active state"),
@@ -235,9 +259,13 @@ router.post("/inventory", centerController.getInventory);
 
 router.post("/inventory/:partId", centerController.getPart);
 
+// get parts which need reorder
+
+router.post("/inventorys/reorder", centerController.getReorderParts);
+
 // add a part
 router.post(
-  "/inventory",
+  "/addInventory",
   [
     check("name").isString().withMessage("Invalid Name"),
     check("description").isString().withMessage("Invalid Description"),
@@ -246,6 +274,7 @@ router.post(
       .withMessage("Invalid Manufacture Country"),
     check("quantity").isInt().withMessage("Invalid Quantity"),
     check("price").isFloat().withMessage("Invalid price"),
+    check("reorder_quantity").isInt().withMessage("Invalid Reorder Quantity"),
   ],
   async (req, res, next) => {
     const errors = validationResult(req);
@@ -277,6 +306,7 @@ router.patch(
       .withMessage("Invalid Manufacture Country"),
     check("quantity").optional().isInt().withMessage("Invalid Quantity"),
     check("price").optional().isFloat().withMessage("Invalid price"),
+    check("reorder_quantity").optional().isInt().withMessage("Invalid Reorder Quantity"),
   ],
   async (req, res, next) => {
     const errors = validationResult(req);
@@ -433,6 +463,10 @@ router.post(
   "/onGoingServices/:onGoingServiceId",
   centerController.getOnGoingService
 );
+
+// get all finished services
+
+router.post("/finishedServices", centerController.getFinishedServices);
 
 // add one ongoing service
 

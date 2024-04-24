@@ -9,11 +9,11 @@ const catchAsync = require('../utils/catchAsync');
 
 exports.getVehicles = catchAsync(async (req, res, next) => {
   const result = await pool.query(`
-    SELECT vt.vehicle_id, vt.number_plate, vt.model, vt.make, ot.reg_year, oot.id, oot.name, oot.phone, ft.description AS fuel_type
+    SELECT vt.vehicle_id, vt.number_plate, vt.model, vt.make, ot.reg_year, oot.id AS owner_id, oot.name, oot.phone, ft.description AS fuel_type
     FROM "carConnectPro"."owner_vehicle" AS ot
-    RIGHT JOIN "carConnectPro"."vehicles" AS vt ON ot.vehicle_id = vt.vehicle_id
-    RIGHT JOIN "carConnectPro"."owner" AS oot ON ot.owner_id = oot.id
-    LEFT JOIN "carConnectPro"."fuel_type" AS ft ON vt.fuel_type = ft.type;
+    INNER JOIN "carConnectPro"."vehicles" AS vt ON ot.vehicle_id = vt.vehicle_id
+    INNER JOIN "carConnectPro"."owner" AS oot ON ot.owner_id = oot.id
+    INNER JOIN "carConnectPro"."fuel_type" AS ft ON vt.fuel_type = ft.type;
   `);
 
   return res.status(200).json({

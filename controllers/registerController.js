@@ -162,7 +162,8 @@ async function createSchemaAndTables(schemaName, next) {
       description TEXT NOT NULL,
       manufacture_country TEXT NOT NULL,
       quantity INTEGER NOT NULL,
-      price NUMERIC(10,2) NOT NULL
+      price NUMERIC(10,2) NOT NULL,
+      reorder_quantity INTEGER NOT NULL
     )`);
 
     await client.query(`CREATE TABLE ${schemaName}.roles(
@@ -183,16 +184,16 @@ async function createSchemaAndTables(schemaName, next) {
       username TEXT NOT NULL,
       salt BYTEA NOT NULL,
       password BYTEA NOT NULL,
-      profile_pic BYTEA NOT NULL,
+      profile_pic BYTEA,
       email TEXT NOT NULL,
       contact TEXT NOT NULL,
       nic TEXT NOT NULL,
-      gender CHAR,
+      gender CHAR NOT NULL,
       dob DATE NOT NULL,
       manager_id INTEGER REFERENCES ${schemaName}.employee(id),
       designation TEXT NOT NULL,
       salary NUMERIC(10,2) NOT NULL,
-      roles INTEGER REFERENCES ${schemaName}.roles(id),
+      roles INTEGER REFERENCES ${schemaName}.roles(id) NOT NULL,
       \"isActive\" BOOLEAN NOT NULL
     )`);
 
@@ -218,7 +219,7 @@ async function createSchemaAndTables(schemaName, next) {
     )`);
 
     // service technician table
-    await client.query(`CREATE TABLE ${schemaName}.service_technicians(
+    await client.query(`CREATE TABLE ${schemaName}.service_technician(
       id SERIAL PRIMARY KEY,
       service_id INTEGER NOT NULL REFERENCES ${schemaName}.service_records(id),
       technician_id INTEGER NOT NULL REFERENCES ${schemaName}.employee(id)
