@@ -554,4 +554,8 @@ router.post(
   centerController.getVehicleServiceHistory
 );
 
+// get mileage on last service date for one vehicle
+
+router.post("/service/mileage", centerController.getVehicleMileage);
+
 module.exports = router;

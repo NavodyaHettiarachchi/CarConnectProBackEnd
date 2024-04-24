@@ -1295,7 +1295,7 @@ exports.getServices = catchAsync(async (req, res, next) => {
 exports.getService = catchAsync(async (req, res, next) => {
   const result = await pool.query(
     `
-      SELECT * FROM "${req.body.schema}"."service_record" WHERE isOngoing = $1 AND id = $2
+      SELECT * FROM "${req.body.schema}"."service_records" WHERE \"isOngoing\" = $1 AND id = $2
     `,
     [false, req.body.id]
   );
@@ -1342,3 +1342,32 @@ exports.getVehicleServiceHistory = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+// @ DESCRIPTION      => Get last mileage of a vehicle
+// @ ENDPOINT         => /center/service/mileage
+// @ ACCESS           => 
+// @ CREATED BY       => Thisara Nilupul
+// @ CREATED DATE     => 2024/04/24
+
+exports.getVehicleMileage = catchAsync(async (req, res, next) => {
+  const vehicleId = req.body.vehicleId;
+  const schema = req.body.schema;
+    const result = await pool.query(`
+      SELECT MAX(st.mileage) AS max_mileage
+      FROM "${schema}"."service_records" AS st
+      JOIN "${schema}"."clients" AS ct ON st.client_id = ct.id
+      WHERE ct.vehicle_id = $1
+    `, [vehicleId]);
+
+    return res.status(200).json({
+      status: "success",
+      showQuickNotification: true,
+      message: "Successfully retrieved Mileage...",
+      data: {
+        Mileage: result.rows[0].max_mileage,
+      },
+    });
+
+});
+
+
