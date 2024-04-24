@@ -461,8 +461,8 @@ exports.getVehicleNotifs = catchAsync(async (req, res, next) => {
       for (let j = 0; j < serviceHistory.length; j++) {
         const record = serviceHistory[j];
         const result = await pool.query(`
-        SELECT MAX(service_date) AS last_service_date FROM "${record.schema}"."service_records" AS st
-        JOIN "${record.schema}"."clients" AS ct
+        SELECT MAX(service_date) AS last_service_date FROM "${record}"."service_records" AS st
+        JOIN "${record}"."clients" AS ct
         ON st.client_id = ct.id
         WHERE ct.vehicle_id = $1
       `, [vehicle.vehicle_id]);
