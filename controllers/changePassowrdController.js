@@ -9,7 +9,7 @@ const AppError = require('../utils/appError');
 // Function to retrieve current password
 exports.getCurrentPassword = catchAsync(async (req, res, next) => {
   const { userType, id } = req.params;
-  const { prevPassword } = req.body; // Get the provided password from request body
+  const { prevPassword,SchemaValue} = req.body; // Get the provided password from request body
 
   console.log('Request Parameters - userType:', userType, 'userId:', id);
   console.log('Provided password:', prevPassword);
@@ -30,7 +30,7 @@ exports.getCurrentPassword = catchAsync(async (req, res, next) => {
               idColumnName = 'center_id';
               break;
           case 'employee':
-              schema = req.body.schema;
+              schema = SchemaValue;
               table = 'employee';
               idColumnName = 'id';
               break;
