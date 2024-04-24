@@ -75,7 +75,7 @@ router.post("/getemployee", centerController.getEmployees);
 
 // get an employee of a center
 
-router.get("/employee/:empId", centerController.getEmployee);
+router.get('/employee/profile/:empId', centerController.getEmployee);
 
 // add an employee to a canter
 
@@ -141,54 +141,26 @@ router.post(
 // update employee of a center
 
 router.patch(
-  "/employee/:empId",
+  "/employee/profile/:empId",
   [
-    check("name")
-      .optional()
-      .trim()
-      .isString()
-      .withMessage("Name can only be a string"),
-    check("contact")
-      .optional()
-      .isString()
-      .trim()
-      .isLength({ min: 10, max: 10 })
-      .withMessage("Invalid phone number"),
-    check("gender")
-      .optional()
-      .isIn(["M", "F", "O"])
-      .withMessage("Invalid gender"),
-    check("dob")
-      .optional()
-      .isISO8601()
-      .toDate()
-      .withMessage("Invalid date of birth"),
-    check("profile_pic")
-      .optional()
-      .custom((value) => {
-        // Check if profile_pic is provided and is a valid bytea field
-        if (!value || !Buffer.isBuffer(value)) {
-          throw new Error("Invalid Profile Pic");
-        }
-        // If validation passes, return true
-        return true;
-      }),
-    check("designation")
-      .optional()
-      .trim()
-      .isString()
-      .withMessage("Invalid Designation"),
-    check("manager_id")
-      .optional()
-      .trim()
-      .isInt()
-      .withMessage("Invalid Manager ID"),
-    check("salary").optional().isFloat().withMessage("Invalid salary"),
-    check("isActive")
-      .optional()
-      .isBoolean()
-      .withMessage("Invalid active state"),
-    check("roles").isInt().optional().withMessage("Need a role please"),
+    check("name").optional().trim().isString().withMessage("Name can only be a string"),
+    check("contact").optional().isString().trim().isLength({ min: 10, max: 10 }).withMessage("Invalid phone number"),
+    check("gender") .optional().isIn(["M", "F", "O"]).withMessage("Invalid gender"),
+    check("dob").optional().isISO8601().toDate().withMessage("Invalid date of birth"),
+    // check("profile_pic").optional()
+    //   .custom((value) => {
+    //     // Check if profile_pic is provided and is a valid bytea field
+    //     if (!value || !Buffer.isBuffer(value)) {
+    //       throw new Error("Invalid Profile Pic");
+    //     }
+    //     // If validation passes, return true
+    //     return true;
+    //   }),
+    check("designation").optional().trim().isString().withMessage("Invalid Designation"),
+    //check("manager_id") .optional() .trim() .isInt() .withMessage("Invalid Manager ID"),
+    //check("salary").optional().isFloat().withMessage("Invalid salary"),
+    //check("isActive").optional().isBoolean().withMessage("Invalid active state"),
+    //check("roles").isInt().optional().withMessage("Need a role please"),
   ],
   async (req, res, next) => {
     const errors = validationResult(req);
@@ -203,6 +175,7 @@ router.patch(
     centerController.updateEmployee(req, res, next);
   }
 );
+
 
 // delete an employee of a center
 

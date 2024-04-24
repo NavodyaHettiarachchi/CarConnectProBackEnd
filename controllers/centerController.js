@@ -202,12 +202,18 @@ exports.getEmployees = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 exports.getEmployee = catchAsync(async (req, res, next) => {
+  const { empId } = req.params; // Extract empId from request params
+  const { schema } = req.query; // Extract schema from request query parameters
+
+  // console.log("Request Params:", req.params);
+  // console.log("Employee ID:", empId);
+  // console.log("Schema:", schema);
+
   const result = await pool.query(
-    `
-    SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
-    FROM ${req.body.schema}."employee" AS et LEFT JOIN ${req.body.schema}."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
+    `SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
+    FROM ${schema}."employee" AS et LEFT JOIN ${schema}."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
   `,
-    [req.params.empId]
+  [empId]
   );
 
   if (result.rows.length === 0) {
@@ -215,9 +221,13 @@ exports.getEmployee = catchAsync(async (req, res, next) => {
       status: "fail",
       showQuickNotification: true,
       message: "Invalid employee id",
-      error: error,
     });
   }
+
+
+  // const empData = result.rows[0];
+  //   console.log("Employee Data:", empData); // Log employee data to console
+
 
   return res.status(200).json({
     status: "success",
@@ -228,6 +238,7 @@ exports.getEmployee = catchAsync(async (req, res, next) => {
     },
   });
 });
+
 
 // @ DESCRIPTION      => Add an employee of center
 // @ ENDPOINT         => /center/employee
@@ -346,13 +357,20 @@ exports.addEmployee = catchAsync(async (req, res, next) => {
 // @ CREATED DATE     => 2024/02/24
 
 exports.updateEmployee = catchAsync(async (req, res, next) => {
+  const { empId } = req.params; // Extract empId from request params
+  const { schema } = req.query; // Extract schema from request query parameters
+
+  console.log("Request Params:", req.params);
+  console.log("Employee ID:", empId);
+  console.log("Schema:", schema);
+
   let sql = `
-      UPDATE ${req.body.schema}."employee" SET
+      UPDATE ${schema}."employee" SET
     `;
   const dataArr = [];
   let count = 1;
   for (let key in req.body) {
-    if (key !== "id" && key !== "schema") {
+    if (key !== "id" && key !== "schema" && key !== "manager_name") { // Exclude manager_name
       if (key === "isActive") {
         sql = sql.concat(' "isActive" = $', count.toString(), ", ");
         count++;
@@ -366,14 +384,14 @@ exports.updateEmployee = catchAsync(async (req, res, next) => {
   }
   sql = sql.substring(0, sql.length - 2);
   sql = sql.concat(" WHERE id = $", count.toString(), " RETURNING id");
-  dataArr.push(req.params.empId);
+  dataArr.push(empId);
 
   const result = await pool.query(sql, dataArr);
 
   const result1 = await pool.query(
     `
-  SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
-  FROM ${req.body.schema}."employee" AS et LEFT JOIN ${req.body.schema}."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
+  SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, et.designation, et.salary, et.roles, et."isActive"
+  FROM ${schema}."employee" AS et WHERE et.id = $1
   `,
     [result.rows[0].id]
   );
@@ -382,7 +400,7 @@ exports.updateEmployee = catchAsync(async (req, res, next) => {
     {
       id: result1.rows[0].id,
       username: result1.rows[0].username,
-      type: "Employee of " + req.body.schema,
+      type: "Employee of " + schema,
       action: "Update",
       updatedFields: req.body,
     },
@@ -398,6 +416,7 @@ exports.updateEmployee = catchAsync(async (req, res, next) => {
     },
   });
 });
+
 
 // @ DESCRIPTION      => Delete an employee of center
 // @ ENDPOINT         => /center/employee/:empId
