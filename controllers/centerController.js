@@ -1349,25 +1349,74 @@ exports.getVehicleServiceHistory = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Thisara Nilupul
 // @ CREATED DATE     => 2024/04/24
 
+// exports.getVehicleMileage = catchAsync(async (req, res, next) => {
+//   const vehicleId = req.body.vehicleId;
+  // const schema = req.body.schema;
+  //   const result = await pool.query(`
+  //     SELECT MAX(st.mileage) AS max_mileage
+  //     FROM "${schema}"."service_records" AS st
+  //     JOIN "${schema}"."clients" AS ct ON st.client_id = ct.id
+  //     WHERE ct.vehicle_id = $1
+  //   `, [vehicleId]);
+
+  //   return res.status(200).json({
+  //     status: "success",
+  //     showQuickNotification: true,
+  //     message: "Successfully retrieved Mileage...",
+  //     data: {
+  //       Mileage: result.rows[0].max_mileage,
+  //     },
+  //   });
+
+// });
+
 exports.getVehicleMileage = catchAsync(async (req, res, next) => {
   const vehicleId = req.body.vehicleId;
-  const schema = req.body.schema;
     const result = await pool.query(`
-      SELECT MAX(st.mileage) AS max_mileage
-      FROM "${schema}"."service_records" AS st
-      JOIN "${schema}"."clients" AS ct ON st.client_id = ct.id
+    SELECT service_history FROM "carConnectPro"."vehicles"
+    WHERE vehicle_id = $1
+  `, [vehicleId]);
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({
+      status: "failed",
+      showQuickNotification: true,
+      message: "Invalid Vehicle ID..."
+    });
+  }
+
+  const recordObj = result.rows[0].service_history;
+  console.log("recordObj:", recordObj);
+
+  if (recordObj === null) {
+    return res.status(404).json({
+      status: "failed",
+      showQuickNotification: true,
+      message: "No service history found for the given vehicle ID..."
+    });
+  }
+
+  let vehicleHistory = [];
+
+  const queries = recordObj.map(async record => {
+    const rec = await pool.query(`
+      SELECT MAX(st.mileage) AS max_mileage FROM "${record.schema}"."service_records" AS st
+      JOIN "${record.schema}"."clients" AS ct
+      ON st.client_id = ct.id
       WHERE ct.vehicle_id = $1
     `, [vehicleId]);
+    return rec.rows[0].max_mileage;
+  });
 
-    return res.status(200).json({
-      status: "success",
-      showQuickNotification: true,
-      message: "Successfully retrieved Mileage...",
-      data: {
-        Mileage: result.rows[0].max_mileage,
-      },
-    });
+  const results = await Promise.all(queries);
 
+  return res.status(200).json({
+    status: "success",
+    showQuickNotification: true,
+    message: "Retrieved max mileage successfully...",
+    data: {
+        Mileage: results,
+        },
+  });
 });
-
 
