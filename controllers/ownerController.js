@@ -319,8 +319,8 @@ exports.getVehicleHistory = catchAsync(async (req, res, next) => {
 
   const queries = recordObj.map(async record => {
     const rec = await pool.query(`
-      SELECT *, '${record.schema}' AS schema FROM "${record.schema}"."service_records" AS st
-      JOIN "${record.schema}"."clients" AS ct
+      SELECT *, '${record}' AS schema FROM "${record}"."service_records" AS st
+      JOIN "${record}"."clients" AS ct
       ON st.client_id = ct.id
       WHERE ct.vehicle_id = $1
     `, [req.params.vehicleId]);
