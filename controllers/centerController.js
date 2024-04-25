@@ -213,7 +213,7 @@ exports.getEmployee = catchAsync(async (req, res, next) => {
     `SELECT et.id, et.name, et.username, et.profile_pic, et.email, et.contact, et.dob, et.nic, et.gender, mt.id AS manager_id, mt.name AS manager_name, mt.designation AS manager_designation, et.designation, et.salary, et.roles, et."isActive"
     FROM ${schema}."employee" AS et LEFT JOIN ${schema}."employee" AS mt ON et.manager_id = mt.id WHERE et.id = $1
   `,
-  [empId]
+    [empId]
   );
 
   if (result.rows.length === 0) {
@@ -1349,30 +1349,9 @@ exports.getVehicleServiceHistory = catchAsync(async (req, res, next) => {
 // @ CREATED BY       => Thisara Nilupul
 // @ CREATED DATE     => 2024/04/24
 
-// exports.getVehicleMileage = catchAsync(async (req, res, next) => {
-//   const vehicleId = req.body.vehicleId;
-  // const schema = req.body.schema;
-  //   const result = await pool.query(`
-  //     SELECT MAX(st.mileage) AS max_mileage
-  //     FROM "${schema}"."service_records" AS st
-  //     JOIN "${schema}"."clients" AS ct ON st.client_id = ct.id
-  //     WHERE ct.vehicle_id = $1
-  //   `, [vehicleId]);
-
-  //   return res.status(200).json({
-  //     status: "success",
-  //     showQuickNotification: true,
-  //     message: "Successfully retrieved Mileage...",
-  //     data: {
-  //       Mileage: result.rows[0].max_mileage,
-  //     },
-  //   });
-
-// });
-
 exports.getVehicleMileage = catchAsync(async (req, res, next) => {
   const vehicleId = req.body.vehicleId;
-    const result = await pool.query(`
+  const result = await pool.query(`
     SELECT service_history FROM "carConnectPro"."vehicles"
     WHERE vehicle_id = $1
   `, [vehicleId]);
@@ -1386,9 +1365,8 @@ exports.getVehicleMileage = catchAsync(async (req, res, next) => {
   }
 
   const recordObj = result.rows[0].service_history;
-  console.log("recordObj:", recordObj);
 
-  if (recordObj === null) {
+  if (!recordObj) {
     return res.status(404).json({
       status: "failed",
       showQuickNotification: true,
@@ -1396,27 +1374,27 @@ exports.getVehicleMileage = catchAsync(async (req, res, next) => {
     });
   }
 
-  let vehicleHistory = [];
+  let maxMileage = -1; // Initialize to -1, assuming mileage cannot be negative
 
-  const queries = recordObj.map(async record => {
+  for (let i = 0; i < recordObj.length; i++) {
+    const schema = recordObj[i];
     const rec = await pool.query(`
-      SELECT MAX(st.mileage) AS max_mileage FROM "${record.schema}"."service_records" AS st
-      JOIN "${record.schema}"."clients" AS ct
+      SELECT MAX(st.mileage) AS max_mileage FROM "${schema}"."service_records" AS st
+      JOIN "${schema}"."clients" AS ct
       ON st.client_id = ct.id
       WHERE ct.vehicle_id = $1
     `, [vehicleId]);
-    return rec.rows[0].max_mileage;
-  });
 
-  const results = await Promise.all(queries);
+    const maxMileageFromSchema = rec.rows[0].max_mileage || 0; // If no records found, set to 0
+    maxMileage = Math.max(maxMileage, maxMileageFromSchema); // Update overall max mileage
+  }
 
   return res.status(200).json({
     status: "success",
     showQuickNotification: true,
     message: "Retrieved max mileage successfully...",
     data: {
-        Mileage: results,
-        },
+      Mileage: maxMileage,
+    },
   });
 });
-
